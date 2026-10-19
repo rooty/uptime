@@ -5,6 +5,10 @@ BIN_DIR ?= bin
 GO ?= go
 GOFLAGS ?=
 LDFLAGS ?= -s -w
+VERSION ?= dev
+COMMIT ?= unknown
+BUILD_TIME ?= unknown
+BUILD_LDFLAGS = $(LDFLAGS) -X snippetbook/internal/version.Version=$(VERSION) -X snippetbook/internal/version.Commit=$(COMMIT) -X snippetbook/internal/version.BuildTime=$(BUILD_TIME)
 
 PLATFORMS := \
 	linux-amd64 \
@@ -43,7 +47,7 @@ vet:
 
 build:
 	@mkdir -p "$(BIN_DIR)"
-	CGO_ENABLED=0 $(GO) build $(GOFLAGS) -trimpath -ldflags "$(LDFLAGS)" -o "$(BIN_DIR)/$(APP_NAME)" .
+	CGO_ENABLED=0 $(GO) build $(GOFLAGS) -trimpath -ldflags "$(BUILD_LDFLAGS)" -o "$(BIN_DIR)/$(APP_NAME)" .
 
 run:
 	$(GO) run .
@@ -72,7 +76,7 @@ release-%:
 	out="$(DIST_DIR)/$$platform"; \
 	case "$$os" in windows) suffix='.exe' ;; *) suffix='' ;; esac; \
 	mkdir -p "$$out"; \
-	GOOS="$$os" GOARCH="$$arch" CGO_ENABLED=0 $(GO) build $(GOFLAGS) -trimpath -ldflags "$(LDFLAGS)" -o "$$out/$(APP_NAME)$$suffix" .; \
+	GOOS="$$os" GOARCH="$$arch" CGO_ENABLED=0 $(GO) build $(GOFLAGS) -trimpath -ldflags "$(BUILD_LDFLAGS)" -o "$$out/$(APP_NAME)$$suffix" .; \
 	cp -R web "$$out/web"; \
 	cp .env.example "$$out/.env.example"; \
 	printf 'Собрано: %s\n' "$$out/$(APP_NAME)$$suffix"

@@ -2,16 +2,30 @@ package handler
 
 import (
 	"strings"
+	"time"
 
 	"github.com/gin-gonic/gin"
 
 	"snippetbook/internal/auth"
 	"snippetbook/internal/crypto"
 	"snippetbook/internal/store"
+	"snippetbook/internal/version"
 )
 
 func SetupRouter(st *store.DB, v *crypto.Vault) *gin.Engine {
 	r := gin.Default()
+	health := func(c *gin.Context) {
+		c.JSON(200, gin.H{
+			"status":         "ok",
+			"version":        version.Version,
+			"commit":         version.Commit,
+			"build_time":     version.BuildTime,
+			"started_at":     version.StartedAt.Format(time.RFC3339),
+			"uptime_seconds": int64(time.Since(version.StartedAt).Seconds()),
+		})
+	}
+	// The public probe lets an external uptime checker verify the process.
+	r.GET("/healthz", health)
 	access := auth.CloudflareAccess()
 	r.Use(access)
 	api := r.Group("/api/v1")
@@ -20,7 +34,7 @@ func SetupRouter(st *store.DB, v *crypto.Vault) *gin.Engine {
 		serviceHandler := NewServicesHandler(st)
 		mailHandler := NewMailHandler(st)
 
-		api.GET("/health", func(c *gin.Context) { c.JSON(200, gin.H{"status": "ok"}) })
+		api.GET("/health", health)
 
 		api.GET("/items", ih.List)
 		api.POST("/items", ih.Create)
