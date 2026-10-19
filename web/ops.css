@@ -50,7 +50,7 @@ button.primary { background: #2463d4; color: white; border-color: #2463d4; } but
 .service-table tbody tr:nth-child(odd) { background: #15181d; }
 .service-table tbody tr:nth-child(even) { background: #11151b; }
 .service-table tbody tr:hover { background: #1c2028; }
-.uptime-catalog { min-width: 0; border-collapse: separate; border-spacing: 0; }
+.uptime-catalog { min-width: 1580px; border-collapse: separate; border-spacing: 0; }
 .uptime-catalog th { height: 38px; background: #0d141e; text-transform: uppercase; letter-spacing: .04em; }
 .uptime-catalog td { height: 66px; }
 .uptime-catalog .service-row td { border-bottom-color: #202a36; }
@@ -90,6 +90,28 @@ button.primary { background: #2463d4; color: white; border-color: #2463d4; } but
 .uptime-catalog .service-row .table-uptime > div { display: inline-block; vertical-align: middle; }
 .uptime-catalog .service-row .table-uptime > .uptime-svg-badge { display: inline-block; margin: 0 0 0 8px; vertical-align: middle; }
 .uptime-catalog .service-row .table-cert small { margin-left: 5px; }
+.service-status-cell { min-width: 105px; }
+.service-status-cell .status-droplet,
+.service-status-cell .uptime-svg-badge { display: inline-block; vertical-align: middle; }
+.service-status-cell .uptime-svg-badge { margin-left: 8px; }
+.uptime-catalog .site-cell { min-width: 250px; }
+.uptime-catalog .site-cell .table-history-bars { margin-top: 8px; }
+.inline-chart-cell { min-width: 235px; width: 20%; }
+.inline-metric-chart { min-width: 220px; }
+.inline-metric-chart .metric-line-chart { gap: 2px; }
+.inline-metric-chart .metric-line-chart svg { height: 84px; }
+.inline-metric-chart .metric-line-chart svg text { font-size: 8px; }
+.inline-metric-chart .metric-line-legend { gap: 5px; font-size: 10px; }
+.inline-page-size { min-width: 220px; }
+.inline-page-size > span { display: flex !important; justify-content: space-between; gap: 12px; color: #929baa; font-size: 12px; }
+.inline-page-size > span strong { color: #c7ced8; }
+.inline-page-size .metric-line-chart { margin-top: 4px; }
+.inline-page-size .metric-line-chart svg { height: 64px; }
+.service-inline-details { min-width: 310px; color: #c7ced8; }
+.service-inline-details > div { display: inline-block; margin-right: 12px; vertical-align: middle; }
+.service-inline-details > div + div { margin-top: 5px; }
+.service-inline-details small { margin-left: 5px !important; }
+.service-inline-details .table-status { display: inline !important; }
 .actions-heading { width: 104px; }
 .actions-cell .service-actions { gap: 5px; }
 .actions-cell .icon-button { width: 32px; height: 32px; padding: 6px; border-radius: 8px; }

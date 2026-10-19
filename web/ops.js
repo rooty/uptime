@@ -202,24 +202,35 @@ function bindServiceActions(root) {
 function renderServiceTable() {
   const root = $('serviceList');
   if (!services.length) { root.innerHTML = '<div class="empty">Сервисов по выбранным фильтрам нет.</div>'; return; }
-   root.innerHTML = `<div class="service-table-wrap"><table class="service-table uptime-catalog"><thead><tr><th class="status-col" aria-label="Статус"></th><th>SITE (${services.length})</th><th>TYPE</th><th>STATUS</th><th class="period-heading"><button data-catalog-period="6h" class="${catalogPeriod === '6h' ? 'active' : ''}">6h</button><button data-catalog-period="24h" class="${catalogPeriod === '24h' ? 'active' : ''}">24h</button><button data-catalog-period="7d" class="${catalogPeriod === '7d' ? 'active' : ''}">7d</button></th><th>UPTIME</th><th>RESPONSE</th><th>HTTP</th><th>CERT</th><th class="actions-heading" aria-label="Действия"></th></tr></thead><tbody>${services.map(service => {
-    const [status, label] = statusLabel(service.last_check);
-    const check = service.last_check;
-    const type = canonicalCheckType(service.check_type);
-    const state = check ? label : 'Pending';
-    const timing = check ? `${check.response_time_ms} ms` : 'Ожидает первого запуска';
-     return `<tr class="service-row" data-service-row="${service.id}"><td class="status-col">${statusDroplet(status, label)}</td><td class="site-cell"><strong>${escapeHtml(service.name)}</strong><a class="table-url" href="${escapeHtml(service.url)}" target="_blank" rel="noreferrer">${escapeHtml(service.url)} ↗</a></td><td><span class="type-label">${escapeHtml(capabilityLabels[type] || type)}</span><small>${escapeHtml(service.check_interval || '30s')} · ${escapeHtml(timing)}</small></td><td><strong class="table-status status-${escapeHtml(status)}">${escapeHtml(state)}</strong><small>${escapeHtml(formatStatusDuration(service))}</small></td><td class="row-period-label">${catalogPeriod}</td><td class="table-uptime"><div>${serviceHistoryBars(service)}</div>${uptimeBadgeSVG(serviceUptime(service))}</td><td class="metrics-cell">${check ? `${escapeHtml(check.response_time_ms)} ms` : '<em>Ожидание</em>'}</td><td class="metrics-cell">${serviceHTTPStatus(check)}</td><td class="metrics-cell table-cert">${serviceCertificate(check)}</td><td class="actions-cell">${serviceActionButtons(service)}</td></tr><tr class="service-statistics"><td colspan="10"><div class="expanded-metrics" data-metrics-root="${service.id}"><span class="muted">Загрузка статистики…</span></div></td></tr>`;
-  }).join('')}</tbody></table></div>`;
+  root.innerHTML = `<div class="service-table-wrap"><table class="service-table uptime-catalog"><thead><tr><th class="status-col" aria-label="Статус"></th><th>SITE (${services.length})</th><th>RESPONSE TIME</th><th>DNS + CONNECT + TLS</th><th class="period-heading"><button data-catalog-period="6h" class="${catalogPeriod === '6h' ? 'active' : ''}">6h</button><button data-catalog-period="24h" class="${catalogPeriod === '24h' ? 'active' : ''}">24h</button><button data-catalog-period="7d" class="${catalogPeriod === '7d' ? 'active' : ''}">7d</button></th><th>OTHER DATA</th><th class="actions-heading" aria-label="Действия"></th></tr></thead><tbody>${services.map(service => {
+     const [status, label] = statusLabel(service.last_check);
+     const check = service.last_check;
+      const type = canonicalCheckType(service.check_type);
+      const state = check ? label : 'Pending';
+      const timing = check ? `${check.response_time_ms} ms` : 'Ожидает первого запуска';
+      return `<tr class="service-row" data-service-row="${service.id}"><td class="status-col service-status-cell">${statusDroplet(status, label)}${uptimeBadgeSVG(serviceUptime(service))}</td><td class="site-cell"><strong>${escapeHtml(service.name)}</strong><a class="table-url" href="${escapeHtml(service.url)}" target="_blank" rel="noreferrer">${escapeHtml(service.url)} ↗</a>${serviceHistoryBars(service)}</td><td class="inline-chart-cell"><div class="inline-metric-chart" data-inline-metrics="${service.id}" data-inline-field="response"><span class="muted">Загрузка…</span></div></td><td class="inline-chart-cell"><div class="inline-metric-chart" data-inline-metrics="${service.id}" data-inline-field="dns"><span class="muted">Загрузка…</span></div></td><td class="row-period-label">${catalogPeriod}</td><td class="service-inline-details"><div><span class="type-label">${escapeHtml(capabilityLabels[type] || type)}</span><small>${escapeHtml(service.check_interval || '30s')} · ${escapeHtml(timing)}</small></div><div><strong class="table-status status-${escapeHtml(status)}">${escapeHtml(state)}</strong><small>${escapeHtml(formatStatusDuration(service))}</small></div><div>${serviceHTTPStatus(check)} · <span class="table-cert">${serviceCertificate(check)}</span></div><div class="inline-page-size" data-inline-metrics="${service.id}" data-inline-field="page"><span class="muted">Размер: загрузка…</span></div></td><td class="actions-cell">${serviceActionButtons(service)}</td></tr>`;
+   }).join('')}</tbody></table></div>`;
   bindServiceActions(root);
-  root.querySelectorAll('[data-metrics-root]').forEach(metricsRoot => {
-    loadExpandedMetrics(Number(metricsRoot.dataset.metricsRoot), metricsRoot, catalogPeriod);
+  root.querySelectorAll('[data-inline-metrics]').forEach(metricsRoot => {
+    loadInlineMetrics(Number(metricsRoot.dataset.inlineMetrics), metricsRoot, catalogPeriod);
   });
   root.querySelectorAll('[data-catalog-period]').forEach(button => button.onclick = async () => {
     catalogPeriod = button.dataset.catalogPeriod;
     root.querySelectorAll('[data-catalog-period]').forEach(periodButton => periodButton.classList.toggle('active', periodButton === button));
     root.querySelectorAll('.row-period-label').forEach(label => { label.textContent = catalogPeriod; });
-    root.querySelectorAll('[data-metrics-root]').forEach(metricsRoot => loadExpandedMetrics(Number(metricsRoot.dataset.metricsRoot), metricsRoot, catalogPeriod));
+    root.querySelectorAll('[data-inline-metrics]').forEach(metricsRoot => loadInlineMetrics(Number(metricsRoot.dataset.inlineMetrics), metricsRoot, catalogPeriod));
   });
+}
+async function loadInlineMetrics(id, root, period) {
+  try {
+    const metrics = await api(`/services/${id}/metrics?period=${period}`);
+    const field = root.dataset.inlineField;
+    if (field === 'response') root.innerHTML = metricBarChart(metrics.buckets, 'response_sum_ms', '#9e96ff', 'ms');
+    if (field === 'dns') root.innerHTML = metricLineChart(metrics.buckets, [{ field: 'dns_sum_ms', label: 'DNS', color: '#78b7ff' }, { field: 'connect_sum_ms', label: 'Connect', color: '#f0bd51' }, { field: 'tls_sum_ms', label: 'TLS', color: '#55df91' }]);
+    if (field === 'page') root.innerHTML = `<span>PAGE SIZE <strong>${formatBytes(metricAverage(metrics, 'page_size_sum_bytes'))}</strong></span>${metricBarChart(metrics.buckets, 'page_size_sum_bytes', '#55df91', 'bytes')}`;
+  } catch (error) {
+    root.innerHTML = `<span class="muted">Нет данных: ${escapeHtml(error.message)}</span>`;
+  }
 }
 async function loadExpandedMetrics(id, root, period) {
   root.innerHTML = '<span class="muted">Загрузка статистики…</span>';
