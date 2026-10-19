@@ -51,9 +51,55 @@ func sendTelegram(ctx context.Context, settings model.NotificationSettings, item
 	if settings.TelegramBotToken == "" || settings.TelegramChatID == "" {
 		return fmt.Errorf("bot token and chat id are required")
 	}
-	payload, _ := json.Marshal(map[string]string{"chat_id": settings.TelegramChatID, "text": item.Title + "\n" + item.Message})
+	payload, err := json.Marshal(map[string]string{
+		"chat_id":    settings.TelegramChatID,
+		"text":       telegramMessage(item),
+		"parse_mode": "HTML",
+	})
+	if err != nil {
+		return fmt.Errorf("encode Telegram message: %w", err)
+	}
 	endpoint := "https://api.telegram.org/bot" + url.PathEscape(settings.TelegramBotToken) + "/sendMessage"
 	return postJSON(ctx, endpoint, payload, nil)
+}
+
+func telegramMessage(item model.Notification) string {
+	header := "ℹ️ УВЕДОМЛЕНИЕ"
+	switch item.Kind {
+	case "incident_started":
+		header = "🚨 ПРОБЛЕМА НАЧАЛАСЬ"
+	case "incident_resolved":
+		header = "✅ ПРОБЛЕМА РЕШЕНА"
+	case "incident_reminder":
+		header = "⚠️ ПРОБЛЕМА ПРОДОЛЖАЕТСЯ"
+	case "test_started":
+		header = "🧪 ТЕСТ: ОШИБКА"
+	case "test_resolved":
+		header = "🧪 ТЕСТ: ВОССТАНОВЛЕНИЕ"
+	}
+	lines := make([]string, 0, strings.Count(item.Message, "\n")+2)
+	lines = append(lines, "<b>"+escapeTelegramHTML(header)+"</b>")
+	if item.Title != "" {
+		lines = append(lines, "<b>Событие:</b> "+escapeTelegramHTML(item.Title))
+	}
+	for _, line := range strings.Split(strings.TrimSpace(item.Message), "\n") {
+		line = strings.TrimSpace(line)
+		if line == "" {
+			continue
+		}
+		if separator := strings.Index(line, ": "); separator > 0 {
+			lines = append(lines, "<b>"+escapeTelegramHTML(line[:separator+1])+"</b> "+escapeTelegramHTML(line[separator+2:]))
+		} else {
+			lines = append(lines, escapeTelegramHTML(line))
+		}
+	}
+	return strings.Join(lines, "\n")
+}
+
+func escapeTelegramHTML(value string) string {
+	value = strings.ReplaceAll(value, "&", "&amp;")
+	value = strings.ReplaceAll(value, "<", "&lt;")
+	return strings.ReplaceAll(value, ">", "&gt;")
 }
 
 func sendSlack(ctx context.Context, settings model.NotificationSettings, item model.Notification) error {

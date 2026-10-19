@@ -326,6 +326,7 @@ func (h *ServicesHandler) UpdateNotificationSettings(c *gin.Context) {
 
 type notificationTestRequest struct {
 	Channel string `json:"channel"`
+	All     bool   `json:"all"`
 }
 
 func (h *ServicesHandler) TestNotification(c *gin.Context) {
@@ -337,6 +338,32 @@ func (h *ServicesHandler) TestNotification(c *gin.Context) {
 	settings, err := h.Store.NotificationSettings()
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	if request.All || request.Channel == "all" {
+		if !settings.TelegramEnabled && !settings.SlackEnabled && !settings.EmailEnabled {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "no notification channels are enabled"})
+			return
+		}
+		if err := validateNotificationSettings(settings); err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			return
+		}
+		tests := []model.Notification{
+			{Kind: "test_started", Title: "Тест: проблема началась", Message: "Сервис: TEST\nСтатус: offline\nОшибка: тестовое сообщение об ошибке"},
+			{Kind: "test_resolved", Title: "Тест: проблема решена", Message: "Сервис: TEST\nСтатус: online\nВосстановление: тестовое сообщение о восстановлении"},
+		}
+		var failures []string
+		for _, item := range tests {
+			if dispatchErr := notify.DispatchSettings(c.Request.Context(), settings, item); dispatchErr != nil {
+				failures = append(failures, item.Kind+": "+dispatchErr.Error())
+			}
+		}
+		if len(failures) > 0 {
+			c.JSON(http.StatusBadGateway, gin.H{"error": strings.Join(failures, "; ")})
+			return
+		}
+		c.JSON(http.StatusOK, gin.H{"status": "sent", "messages": 2})
 		return
 	}
 	testSettings := settings
