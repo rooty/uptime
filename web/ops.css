@@ -125,6 +125,11 @@ button.primary { background: #2463d4; color: white; border-color: #2463d4; } but
 .service-inline-metric { display: flex !important; align-items: center; gap: 7px; }
 .service-metric-icon { width: 18px; height: 18px; flex: 0 0 18px; color: #9e96ff; }
 .service-inline-metric.table-cert .service-metric-icon { color: #55df91; }
+.service-inline-status { display: flex !important; align-items: center; gap: 7px; }
+.service-status-icon { width: 19px; height: 19px; flex: 0 0 19px; }
+.service-status-icon-online { color: #55df91; }
+.service-status-icon-degraded { color: #f0bd51; }
+.service-status-icon-offline { color: #f04b5e; }
 .service-inline-details .table-status { display: inline !important; }
 .actions-heading { width: 104px; }
 .actions-cell .service-actions { gap: 5px; }
