@@ -166,44 +166,19 @@ function bindServiceActions(root) {
 function renderServiceTable() {
   const root = $('serviceList');
   if (!services.length) { root.innerHTML = '<div class="empty">Сервисов по выбранным фильтрам нет.</div>'; return; }
-  root.innerHTML = `<div class="service-table-wrap"><table class="service-table uptime-catalog"><thead><tr><th class="expand-col"></th><th class="status-col" aria-label="Статус"></th><th>SITE (${services.length})</th><th>TYPE</th><th>STATUS</th><th class="period-heading"><button data-catalog-period="6h" class="${catalogPeriod === '6h' ? 'active' : ''}">6h</button><button data-catalog-period="24h" class="${catalogPeriod === '24h' ? 'active' : ''}">24h</button><button data-catalog-period="7d" class="${catalogPeriod === '7d' ? 'active' : ''}">7d</button></th><th>UPTIME</th><th>METRICS</th><th class="actions-heading" aria-label="Действия"></th></tr></thead><tbody>${services.map(service => {
+  root.innerHTML = `<div class="service-table-wrap"><table class="service-table uptime-catalog"><thead><tr><th class="status-col" aria-label="Статус"></th><th>SITE (${services.length})</th><th>TYPE</th><th>STATUS</th><th class="period-heading"><button data-catalog-period="6h" class="${catalogPeriod === '6h' ? 'active' : ''}">6h</button><button data-catalog-period="24h" class="${catalogPeriod === '24h' ? 'active' : ''}">24h</button><button data-catalog-period="7d" class="${catalogPeriod === '7d' ? 'active' : ''}">7d</button></th><th>UPTIME</th><th>METRICS</th><th class="actions-heading" aria-label="Действия"></th></tr></thead><tbody>${services.map(service => {
     const [status, label] = statusLabel(service.last_check);
     const check = service.last_check;
     const type = canonicalCheckType(service.check_type);
     const state = check ? label : 'Pending';
     const timing = check ? `${check.response_time_ms} ms` : 'Ожидает первого запуска';
-    return `<tr class="service-row" data-service-row="${service.id}"><td class="expand-col"><button class="expand-button" data-expand="${service.id}" aria-label="Раскрыть статистику" title="Раскрыть статистику">⌄</button></td><td class="status-col">${statusDroplet(status, label)}</td><td class="site-cell"><strong>${escapeHtml(service.name)}</strong><a class="table-url" href="${escapeHtml(service.url)}" target="_blank" rel="noreferrer">${escapeHtml(service.url)} ↗</a></td><td><span class="type-label">${escapeHtml(capabilityLabels[type] || type)}</span><small>${escapeHtml(service.check_interval || '30s')} · ${escapeHtml(timing)}</small></td><td><strong class="table-status status-${escapeHtml(status)}">${escapeHtml(state)}</strong></td><td class="row-periods">${['6h', '24h', '7d'].map(period => `<button class="${period === catalogPeriod ? 'active' : ''}" data-row-period="${service.id}" data-period="${period}">${period}</button>`).join('')}</td><td>${uptimeBadgeSVG(serviceUptime(service))}</td><td class="metrics-cell">${check ? `${escapeHtml(check.response_time_ms)} ms` : '<em>Ожидание</em>'}</td><td class="actions-cell">${serviceActionButtons(service)}</td></tr><tr class="service-expanded hidden" data-expanded-row="${service.id}"><td colspan="9"><div class="expanded-metrics" data-metrics-root="${service.id}"><span class="muted">Нажмите на стрелку, чтобы загрузить статистику</span></div></td></tr>`;
+     return `<tr class="service-row" data-service-row="${service.id}"><td class="status-col">${statusDroplet(status, label)}</td><td class="site-cell"><strong>${escapeHtml(service.name)}</strong><a class="table-url" href="${escapeHtml(service.url)}" target="_blank" rel="noreferrer">${escapeHtml(service.url)} ↗</a></td><td><span class="type-label">${escapeHtml(capabilityLabels[type] || type)}</span><small>${escapeHtml(service.check_interval || '30s')} · ${escapeHtml(timing)}</small></td><td><strong class="table-status status-${escapeHtml(status)}">${escapeHtml(state)}</strong></td><td class="row-period-label">${catalogPeriod}</td><td>${uptimeBadgeSVG(serviceUptime(service))}</td><td class="metrics-cell">${check ? `${escapeHtml(check.response_time_ms)} ms` : '<em>Ожидание</em>'}</td><td class="actions-cell">${serviceActionButtons(service)}</td></tr>`;
   }).join('')}</tbody></table></div>`;
   bindServiceActions(root);
-  root.querySelectorAll('[data-expand]').forEach(button => button.onclick = async () => {
-    const id = Number(button.dataset.expand);
-    const row = root.querySelector(`[data-expanded-row="${id}"]`);
-    const open = row.classList.toggle('hidden');
-    button.classList.toggle('open', !open);
-    button.textContent = open ? '⌄' : '⌃';
-    if (!open) await loadExpandedMetrics(id, row.querySelector('[data-metrics-root]'), '6h');
-  });
-  root.querySelectorAll('[data-row-period]').forEach(button => button.onclick = async () => {
-    const id = Number(button.dataset.rowPeriod);
-    const row = root.querySelector(`[data-expanded-row="${id}"]`);
-    const expandButton = root.querySelector(`[data-expand="${id}"]`);
-    if (row.classList.contains('hidden')) {
-      row.classList.remove('hidden');
-      expandButton.classList.add('open');
-      expandButton.textContent = '⌃';
-    }
-    root.querySelectorAll(`[data-row-period="${id}"]`).forEach(periodButton => periodButton.classList.toggle('active', periodButton === button));
-    await loadExpandedMetrics(id, row.querySelector('[data-metrics-root]'), button.dataset.period);
-  });
   root.querySelectorAll('[data-catalog-period]').forEach(button => button.onclick = async () => {
     catalogPeriod = button.dataset.catalogPeriod;
     root.querySelectorAll('[data-catalog-period]').forEach(periodButton => periodButton.classList.toggle('active', periodButton === button));
-    root.querySelectorAll('[data-expanded-row]').forEach(async row => {
-      if (row.classList.contains('hidden')) return;
-      const id = Number(row.dataset.expandedRow);
-      root.querySelectorAll(`[data-row-period="${id}"]`).forEach(periodButton => periodButton.classList.toggle('active', periodButton.dataset.period === catalogPeriod));
-      await loadExpandedMetrics(id, row.querySelector('[data-metrics-root]'), catalogPeriod);
-    });
+    renderServiceTable();
   });
 }
 async function loadExpandedMetrics(id, root, period) {

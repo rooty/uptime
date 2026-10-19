@@ -1,4 +1,4 @@
-.mail-shell { width: min(1440px, calc(100% - 32px)); margin: 28px auto; display: grid; gap: 20px; }
+.mail-shell { width: 100%; max-width: none; margin: 28px 0; padding: 0 28px; display: grid; gap: 20px; }
 .mail-hero { display: grid; gap: 20px; }
 .mail-form { display: grid; grid-template-columns: minmax(180px, 1fr) minmax(180px, 1fr) auto; align-items: end; gap: 12px; }
 .mail-form label { display: grid; gap: 6px; }
