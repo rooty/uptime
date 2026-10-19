@@ -43,6 +43,9 @@ button.primary { background: #2463d4; color: white; border-color: #2463d4; } but
 .service-list { display: grid; gap: 10px; } .service { border: 1px solid #e0e7f0; border-radius: 10px; padding: 15px; display: grid; grid-template-columns: 1fr auto; gap: 10px; }
 .service-search { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px; margin-top: 18px; }
 .filters { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; margin: 10px 0 18px; } .filters button { padding: 8px; }
+.catalog-periods { display: flex; justify-content: flex-end; gap: 6px; margin: -8px 0 14px; }
+.catalog-periods button { min-width: 46px; padding: 7px 10px; border: 0; border-radius: 8px; background: transparent; color: #9aa6b5; font-size: 18px; font-weight: 700; }
+.catalog-periods button.active { background: #29374a; color: #fff; }
 .service-table-wrap { overflow-x: auto; }
 .service-table { width: 100%; min-width: 900px; border-collapse: collapse; }
 .service-table th, .service-table td { padding: 12px 10px; border-bottom: 1px solid #292e36; text-align: left; vertical-align: middle; }
