@@ -73,7 +73,7 @@ function uptimeBadgeSVG(value, label = 'Uptime') {
     empty: ['#303640', '#a1a7b1']
   }[tone];
   const width = text.length > 5 ? 78 : 66;
-  return `<svg class="uptime-svg-badge" width="${width}" height="28" viewBox="0 0 ${width} 28" role="img" aria-label="${escapeHtml(label)} ${escapeHtml(text)}"><title>${escapeHtml(label)}: ${escapeHtml(text)}</title><rect x="1" y="1" width="${width - 2}" height="26" rx="13" fill="${palette[0]}"/><text x="${width / 2}" y="19" text-anchor="middle" fill="${palette[1]}" font-family="Inter, system-ui, sans-serif" font-size="12" font-weight="750">${escapeHtml(text)}</text></svg>`;
+  return `<svg class="uptime-svg-badge" width="${width}" height="28" viewBox="0 0 ${width} 28" role="img" aria-label="${escapeHtml(label)} ${escapeHtml(text)}"><title>${escapeHtml(label)}: ${escapeHtml(text)}</title><rect x="1" y="1" width="${width - 2}" height="26" rx="5" fill="${palette[0]}"/><text x="${width / 2}" y="19" text-anchor="middle" fill="${palette[1]}" font-family="Inter, system-ui, sans-serif" font-size="12" font-weight="750">${escapeHtml(text)}</text></svg>`;
 }
 function formatStatusDuration(service) {
   const latest = service.last_check;
