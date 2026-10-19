@@ -5,7 +5,7 @@ let mailHistory = {};
 let serviceHistory = {};
 let editingId = null;
 let viewMode = localStorage.getItem('uptime-view-mode-v2') || 'table';
-let catalogPeriod = '6h';
+let catalogPeriod = '24h';
 const $ = id => document.getElementById(id);
 
 const checkTypeHints = {
