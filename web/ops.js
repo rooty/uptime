@@ -265,10 +265,32 @@ function metricLineChart(buckets, series) {
   const legend = series.map(item => `<span><i style="background:${item.color}"></i>${escapeHtml(item.label)}</span>`).join('');
   return `<div class="metric-line-chart"><svg viewBox="0 0 ${width} ${height}" role="img" aria-label="DNS, Connect и TLS по времени">${grid}${lines}${labels}</svg><div class="metric-line-legend">${legend}</div></div>`;
 }
+function metricBarChart(buckets, field, color, unit) {
+  if (!buckets.length) return '<div class="metric-line-empty">Нет данных</div>';
+  const width = 560;
+  const height = 180;
+  const left = 42;
+  const right = 12;
+  const top = 12;
+  const bottom = 28;
+  const values = buckets.map(bucket => {
+    const checks = Number(bucket.total_checks || 0);
+    return checks > 0 ? Number(bucket[field] || 0) / checks : 0;
+  });
+  const max = Math.max(...values, 1);
+  const step = (width - left - right) / values.length;
+  const barWidth = Math.max(3, step * 0.72);
+  const y = value => height - bottom - (value / max) * (height - top - bottom);
+  const grid = [0, 0.5, 1].map(fraction => { const value = max * fraction; const lineY = y(value); return `<line x1="${left}" y1="${lineY}" x2="${width - right}" y2="${lineY}" /><text x="${left - 6}" y="${lineY + 4}" text-anchor="end">${Math.round(value)} ${unit}</text>`; }).join('');
+  const bars = values.map((value, index) => { const x = left + index * step + (step - barWidth) / 2; return `<rect x="${x}" y="${y(value)}" width="${barWidth}" height="${Math.max(1, height - bottom - y(value))}" fill="${color}"><title>${Math.round(value)} ${unit}</title></rect>`; }).join('');
+  const labelIndexes = [...new Set([0, Math.floor((buckets.length - 1) / 2), buckets.length - 1])];
+  const labels = labelIndexes.map(index => `<text x="${left + index * step + step / 2}" y="${height - 7}" text-anchor="middle">${escapeHtml(String(buckets[index].bucket || ''))}</text>`).join('');
+  return `<div class="metric-line-chart"><svg viewBox="0 0 ${width} ${height}" role="img" aria-label="График ${escapeHtml(unit)}">${grid}${bars}${labels}</svg></div>`;
+}
 function renderMetricsPanel(metrics) {
   const avgResponse = metricAverage(metrics, 'response_sum_ms');
   const avgPageSize = metricAverage(metrics, 'page_size_sum_bytes');
-  return `<section class="service-metrics"><div class="metrics-toolbar"><strong>Статистика</strong><div>${['6h', '24h', '7d', '30d'].map(period => `<button type="button" class="metric-period ${metrics.period === period ? 'primary' : ''}" data-period="${period}">${period}</button>`).join('')}</div></div><div class="metric-summary"><div><strong>${metrics.uptime_percent.toFixed(2)}%</strong><span>Uptime</span></div><div><strong>${metrics.total_checks}</strong><span>Проверок</span></div><div><strong>${metrics.online_checks}</strong><span>Online</span></div><div><strong>${avgResponse} ms</strong><span>Средний response</span></div></div><div class="metric-panels"><article><h4>RESPONSE TIME</h4><div class="metric-chart">${metricBars(metrics.buckets, 'response_sum_ms', '#9e96ff') || '<span>Нет данных</span>'}</div><small>Среднее: ${avgResponse} ms · максимум: ${Math.max(...metrics.buckets.map(bucket => bucket.response_max_ms || 0), 0)} ms</small></article><article><h4>DNS + CONNECT + TLS</h4>${metricLineChart(metrics.buckets, [{ field: 'dns_sum_ms', label: 'DNS', color: '#78b7ff' }, { field: 'connect_sum_ms', label: 'Connect', color: '#f0bd51' }, { field: 'tls_sum_ms', label: 'TLS', color: '#55df91' }])}<small>Средние значения по проверкам</small></article><article><h4>PAGE SIZE</h4><div class="metric-chart">${metricBars(metrics.buckets, 'page_size_sum_bytes', '#55df91') || '<span>Нет данных</span>'}</div><small>Средний размер: ${avgPageSize} bytes</small></article></div></section>`;
+  return `<section class="service-metrics"><div class="metrics-toolbar"><strong>Статистика</strong><div>${['6h', '24h', '7d', '30d'].map(period => `<button type="button" class="metric-period ${metrics.period === period ? 'primary' : ''}" data-period="${period}">${period}</button>`).join('')}</div></div><div class="metric-summary"><div><strong>${metrics.uptime_percent.toFixed(2)}%</strong><span>Uptime</span></div><div><strong>${metrics.total_checks}</strong><span>Проверок</span></div><div><strong>${metrics.online_checks}</strong><span>Online</span></div><div><strong>${avgResponse} ms</strong><span>Средний response</span></div></div><div class="metric-panels"><article><h4>RESPONSE TIME</h4>${metricBarChart(metrics.buckets, 'response_sum_ms', '#9e96ff', 'ms')}<small>Среднее: ${avgResponse} ms · максимум: ${Math.max(...metrics.buckets.map(bucket => bucket.response_max_ms || 0), 0)} ms</small></article><article><h4>DNS + CONNECT + TLS</h4>${metricLineChart(metrics.buckets, [{ field: 'dns_sum_ms', label: 'DNS', color: '#78b7ff' }, { field: 'connect_sum_ms', label: 'Connect', color: '#f0bd51' }, { field: 'tls_sum_ms', label: 'TLS', color: '#55df91' }])}<small>Средние значения по проверкам</small></article><article><h4>PAGE SIZE</h4>${metricBarChart(metrics.buckets, 'page_size_sum_bytes', '#55df91', 'bytes')}<small>Средний размер: ${avgPageSize} bytes</small></article></div></section>`;
 }
 async function loadServiceMetrics(id, period = '24h') {
   const root = $('serviceMetrics');
