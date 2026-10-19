@@ -13,7 +13,7 @@ func TestTelegramMessageHighlightsIncidentState(t *testing.T) {
 		Title:   "SMTP — проблема началась",
 		Message: "Сервис: SMTP\nОшибка: connection refused",
 	})
-	if !strings.Contains(started, "🚨 ПРОБЛЕМА НАЧАЛАСЬ") || !strings.Contains(started, "<b>Ошибка:</b>") {
+	if !strings.Contains(started, "🚨 ПРОБЛЕМА НАЧАЛАСЬ") || !strings.Contains(started, "<blockquote>") || !strings.Contains(started, "<b>Ошибка:</b>") {
 		t.Fatalf("started Telegram message is not highlighted: %s", started)
 	}
 

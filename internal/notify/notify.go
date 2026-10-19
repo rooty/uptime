@@ -77,8 +77,7 @@ func telegramMessage(item model.Notification) string {
 	case "test_resolved":
 		header = "🧪 ТЕСТ: ВОССТАНОВЛЕНИЕ"
 	}
-	lines := make([]string, 0, strings.Count(item.Message, "\n")+2)
-	lines = append(lines, "<b>"+escapeTelegramHTML(header)+"</b>")
+	lines := make([]string, 0, strings.Count(item.Message, "\n")+1)
 	if item.Title != "" {
 		lines = append(lines, "<b>Событие:</b> "+escapeTelegramHTML(item.Title))
 	}
@@ -93,7 +92,7 @@ func telegramMessage(item model.Notification) string {
 			lines = append(lines, escapeTelegramHTML(line))
 		}
 	}
-	return strings.Join(lines, "\n")
+	return "<b>" + escapeTelegramHTML(header) + "</b>\n<blockquote>" + strings.Join(lines, "\n") + "</blockquote>"
 }
 
 func escapeTelegramHTML(value string) string {
