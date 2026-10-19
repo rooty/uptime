@@ -89,6 +89,11 @@ button.primary { background: #2463d4; color: white; border-color: #2463d4; } but
 .service-table .service-actions button { padding: 6px 8px; font-size: 12px; white-space: nowrap; }
 .service-statistics td { padding: 0 !important; border-bottom-color: #202a36; background: #0b111b !important; }
 .service-statistics .expanded-metrics { padding: 0 12px 12px; }
+.metrics-footer { display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 12px; padding: 10px 2px 2px; color: #929baa; font-size: 12px; }
+.metric-periods { display: flex; gap: 3px; }
+.metric-period { padding: 3px 8px; border-radius: 5px; font-size: 12px; }
+.full-statistics { padding: 0; border: 0; background: transparent; color: #f4f4f5; font-weight: 700; }
+.full-statistics:hover { background: transparent; color: #b3acff; }
 .settings-panel { margin-top: 20px; } .settings-form { grid-template-columns: repeat(3, 1fr); align-items: end; } .settings-form .form-actions { grid-column: 1 / -1; align-items: center; }
 .notification-form { grid-template-columns: repeat(3, 1fr); } .notification-form fieldset { display: grid; gap: 10px; border: 1px solid #e0e7f0; border-radius: 8px; padding: 12px; } .notification-form .form-actions { grid-column: 1 / -1; align-items: center; }
 .service h3 { margin: 0 0 5px; } .service a { border: 0; padding: 0; color: #2463d4; } .service-meta { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 8px; }
@@ -150,6 +155,15 @@ form { display: grid; gap: 14px; } label { display: grid; gap: 6px; font-weight:
 .metric-panels h4 { margin: 0 0 12px; font-size: 13px; }
 .metric-chart { display: flex; align-items: end; gap: 2px; height: 80px; margin-bottom: 10px; }
 .metric-chart span { width: 100%; color: #9298a3; text-align: center; }
+.metric-line-chart { display: grid; gap: 8px; }
+.metric-line-chart svg { width: 100%; height: 150px; overflow: visible; background: #08111d; border-radius: 5px; }
+.metric-line-chart svg line { stroke: #26384c; stroke-width: 1; }
+.metric-line-chart svg polyline { fill: none; stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; }
+.metric-line-chart svg circle { stroke: #08111d; stroke-width: 2; }
+.metric-line-legend { display: flex; flex-wrap: wrap; gap: 10px; color: #9298a3; font-size: 12px; }
+.metric-line-legend span { display: inline-flex; align-items: center; gap: 5px; }
+.metric-line-legend i { width: 9px; height: 9px; border-radius: 50%; display: inline-block; }
+.metric-line-empty { min-height: 150px; display: grid; place-items: center; color: #9298a3; background: #08111d; border-radius: 5px; }
 .metric-bar { display: block; min-width: 3px; flex: 1; border-radius: 2px 2px 0 0; }
 .metric-breakdown { display: grid; gap: 10px; margin: 20px 0; color: #9298a3; }
 .metric-breakdown b { float: right; color: #f4f4f5; }
