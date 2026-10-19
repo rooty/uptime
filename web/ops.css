@@ -88,9 +88,6 @@ button.primary { background: #2463d4; color: white; border-color: #2463d4; } but
 .service-table .service-actions { flex-wrap: nowrap; }
 .service-table .service-actions button { padding: 6px 8px; font-size: 12px; white-space: nowrap; }
 .service-statistics td { padding: 0 !important; border-bottom-color: #202a36; background: #0b111b !important; }
-.service-statistics details { border-top: 1px solid #202a36; }
-.service-statistics summary { padding: 9px 12px; color: #aeb8c6; cursor: pointer; font-size: 12px; user-select: none; }
-.service-statistics summary:hover { color: #fff; background: #121b27; }
 .service-statistics .expanded-metrics { padding: 0 12px 12px; }
 .settings-panel { margin-top: 20px; } .settings-form { grid-template-columns: repeat(3, 1fr); align-items: end; } .settings-form .form-actions { grid-column: 1 / -1; align-items: center; }
 .notification-form { grid-template-columns: repeat(3, 1fr); } .notification-form fieldset { display: grid; gap: 10px; border: 1px solid #e0e7f0; border-radius: 8px; padding: 12px; } .notification-form .form-actions { grid-column: 1 / -1; align-items: center; }
