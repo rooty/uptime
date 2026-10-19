@@ -75,6 +75,42 @@ function uptimeBadgeSVG(value, label = 'Uptime') {
   const width = text.length > 5 ? 78 : 66;
   return `<svg class="uptime-svg-badge" width="${width}" height="28" viewBox="0 0 ${width} 28" role="img" aria-label="${escapeHtml(label)} ${escapeHtml(text)}"><title>${escapeHtml(label)}: ${escapeHtml(text)}</title><rect x="1" y="1" width="${width - 2}" height="26" rx="13" fill="${palette[0]}"/><text x="${width / 2}" y="19" text-anchor="middle" fill="${palette[1]}" font-family="Inter, system-ui, sans-serif" font-size="12" font-weight="750">${escapeHtml(text)}</text></svg>`;
 }
+function formatStatusDuration(service) {
+  const latest = service.last_check;
+  if (!latest) return 'Ожидает первого запуска';
+  const checks = [...(serviceHistory[service.id] || [])].sort((a, b) => new Date(a.checked_at) - new Date(b.checked_at));
+  let startedAt = new Date(latest.checked_at);
+  for (let index = checks.length - 1; index >= 0; index -= 1) {
+    if (checks[index].status !== latest.status) break;
+    startedAt = new Date(checks[index].checked_at);
+  }
+  const seconds = Math.max(0, Math.floor((Date.now() - startedAt.getTime()) / 1000));
+  if (seconds < 60) return `${seconds} сек.`;
+  const minutes = Math.floor(seconds / 60);
+  if (minutes < 60) return `${minutes} мин.`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `${hours} ч. ${minutes % 60} мин.`;
+  return `${Math.floor(hours / 24)} дн. ${hours % 24} ч.`;
+}
+function serviceHistoryBars(service) {
+  const checks = [...(serviceHistory[service.id] || [])].sort((a, b) => new Date(a.checked_at) - new Date(b.checked_at)).slice(-48);
+  const bars = Array.from({ length: 48 }, (_, index) => {
+    const check = checks[index - (48 - checks.length)];
+    const status = check?.status || 'empty';
+    const title = check ? `${check.status} · ${new Date(check.checked_at).toLocaleString()}` : 'Нет проверки';
+    return `<i class="table-history-bar history-${escapeHtml(status)}" title="${escapeHtml(title)}"></i>`;
+  }).join('');
+  return `<div class="table-history-bars">${bars}</div><div class="table-history-scale"><span>48 проверок назад</span><span>Сейчас</span></div>`;
+}
+function serviceHTTPStatus(check) {
+  return check?.http_status ? `HTTP ${check.http_status}` : '—';
+}
+function serviceCertificate(check) {
+  if (!check?.tls) return '—';
+  if (!check.tls.expires_at) return escapeHtml(check.tls.status || '—');
+  const date = new Date(check.tls.expires_at).toLocaleDateString();
+  return `${date}<small>${Number.isFinite(check.tls.days_remaining) ? `через ${check.tls.days_remaining} дн.` : ''}</small>`;
+}
 
 function renderServiceSidebar() {
   const root = $('serviceSidebarList');
@@ -166,13 +202,13 @@ function bindServiceActions(root) {
 function renderServiceTable() {
   const root = $('serviceList');
   if (!services.length) { root.innerHTML = '<div class="empty">Сервисов по выбранным фильтрам нет.</div>'; return; }
-  root.innerHTML = `<div class="service-table-wrap"><table class="service-table uptime-catalog"><thead><tr><th class="status-col" aria-label="Статус"></th><th>SITE (${services.length})</th><th>TYPE</th><th>STATUS</th><th class="period-heading"><button data-catalog-period="6h" class="${catalogPeriod === '6h' ? 'active' : ''}">6h</button><button data-catalog-period="24h" class="${catalogPeriod === '24h' ? 'active' : ''}">24h</button><button data-catalog-period="7d" class="${catalogPeriod === '7d' ? 'active' : ''}">7d</button></th><th>UPTIME</th><th>METRICS</th><th class="actions-heading" aria-label="Действия"></th></tr></thead><tbody>${services.map(service => {
+   root.innerHTML = `<div class="service-table-wrap"><table class="service-table uptime-catalog"><thead><tr><th class="status-col" aria-label="Статус"></th><th>SITE (${services.length})</th><th>TYPE</th><th>STATUS</th><th class="period-heading"><button data-catalog-period="6h" class="${catalogPeriod === '6h' ? 'active' : ''}">6h</button><button data-catalog-period="24h" class="${catalogPeriod === '24h' ? 'active' : ''}">24h</button><button data-catalog-period="7d" class="${catalogPeriod === '7d' ? 'active' : ''}">7d</button></th><th>UPTIME</th><th>RESPONSE</th><th>HTTP</th><th>CERT</th><th class="actions-heading" aria-label="Действия"></th></tr></thead><tbody>${services.map(service => {
     const [status, label] = statusLabel(service.last_check);
     const check = service.last_check;
     const type = canonicalCheckType(service.check_type);
     const state = check ? label : 'Pending';
     const timing = check ? `${check.response_time_ms} ms` : 'Ожидает первого запуска';
-     return `<tr class="service-row" data-service-row="${service.id}"><td class="status-col">${statusDroplet(status, label)}</td><td class="site-cell"><strong>${escapeHtml(service.name)}</strong><a class="table-url" href="${escapeHtml(service.url)}" target="_blank" rel="noreferrer">${escapeHtml(service.url)} ↗</a></td><td><span class="type-label">${escapeHtml(capabilityLabels[type] || type)}</span><small>${escapeHtml(service.check_interval || '30s')} · ${escapeHtml(timing)}</small></td><td><strong class="table-status status-${escapeHtml(status)}">${escapeHtml(state)}</strong></td><td class="row-period-label">${catalogPeriod}</td><td>${uptimeBadgeSVG(serviceUptime(service))}</td><td class="metrics-cell">${check ? `${escapeHtml(check.response_time_ms)} ms` : '<em>Ожидание</em>'}</td><td class="actions-cell">${serviceActionButtons(service)}</td></tr><tr class="service-statistics"><td colspan="8"><div class="expanded-metrics" data-metrics-root="${service.id}"><span class="muted">Загрузка статистики…</span></div></td></tr>`;
+     return `<tr class="service-row" data-service-row="${service.id}"><td class="status-col">${statusDroplet(status, label)}</td><td class="site-cell"><strong>${escapeHtml(service.name)}</strong><a class="table-url" href="${escapeHtml(service.url)}" target="_blank" rel="noreferrer">${escapeHtml(service.url)} ↗</a></td><td><span class="type-label">${escapeHtml(capabilityLabels[type] || type)}</span><small>${escapeHtml(service.check_interval || '30s')} · ${escapeHtml(timing)}</small></td><td><strong class="table-status status-${escapeHtml(status)}">${escapeHtml(state)}</strong><small>${escapeHtml(formatStatusDuration(service))}</small></td><td class="row-period-label">${catalogPeriod}</td><td class="table-uptime"><div>${serviceHistoryBars(service)}</div>${uptimeBadgeSVG(serviceUptime(service))}</td><td class="metrics-cell">${check ? `${escapeHtml(check.response_time_ms)} ms` : '<em>Ожидание</em>'}</td><td class="metrics-cell">${serviceHTTPStatus(check)}</td><td class="metrics-cell table-cert">${serviceCertificate(check)}</td><td class="actions-cell">${serviceActionButtons(service)}</td></tr><tr class="service-statistics"><td colspan="10"><div class="expanded-metrics" data-metrics-root="${service.id}"><span class="muted">Загрузка статистики…</span></div></td></tr>`;
   }).join('')}</tbody></table></div>`;
   bindServiceActions(root);
   root.querySelectorAll('[data-metrics-root]').forEach(metricsRoot => {
