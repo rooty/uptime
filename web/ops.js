@@ -242,23 +242,28 @@ function metricBars(buckets, value, color) {
 function metricLineChart(buckets, series) {
   if (!buckets.length) return '<div class="metric-line-empty">Нет данных</div>';
   const width = 560;
-  const height = 150;
-  const padding = 18;
+  const height = 180;
+  const left = 42;
+  const right = 12;
+  const top = 12;
+  const bottom = 28;
   const values = series.map(item => buckets.map(bucket => {
     const checks = Number(bucket.total_checks || 0);
     return checks > 0 ? Number(bucket[item.field] || 0) / checks : 0;
   }));
   const max = Math.max(...values.flat(), 1);
-  const step = buckets.length === 1 ? 0 : (width - padding * 2) / (buckets.length - 1);
-  const y = value => height - padding - (value / max) * (height - padding * 2);
-  const grid = [0.25, 0.5, 0.75].map(fraction => `<line x1="${padding}" y1="${y(max * fraction)}" x2="${width - padding}" y2="${y(max * fraction)}" />`).join('');
+  const step = buckets.length === 1 ? 0 : (width - left - right) / (buckets.length - 1);
+  const y = value => height - bottom - (value / max) * (height - top - bottom);
+  const grid = [0, 0.5, 1].map(fraction => { const value = max * fraction; const lineY = y(value); return `<line x1="${left}" y1="${lineY}" x2="${width - right}" y2="${lineY}" /><text x="${left - 6}" y="${lineY + 4}" text-anchor="end">${Math.round(value)} ms</text>`; }).join('');
   const lines = values.map((items, seriesIndex) => {
-    const points = items.map((value, index) => `${padding + index * step},${y(value)}`).join(' ');
-    const dots = items.map((value, index) => `<circle cx="${padding + index * step}" cy="${y(value)}" r="3"><title>${escapeHtml(series[seriesIndex].label)}: ${Math.round(value)} ms</title></circle>`).join('');
+    const points = items.map((value, index) => `${left + index * step},${y(value)}`).join(' ');
+    const dots = items.map((value, index) => `<circle cx="${left + index * step}" cy="${y(value)}" r="3"><title>${escapeHtml(series[seriesIndex].label)}: ${Math.round(value)} ms</title></circle>`).join('');
     return `<polyline points="${points}" stroke="${series[seriesIndex].color}" />${dots}`;
   }).join('');
+  const labelIndexes = [...new Set([0, Math.floor((buckets.length - 1) / 2), buckets.length - 1])];
+  const labels = labelIndexes.map(index => `<text x="${left + index * step}" y="${height - 7}" text-anchor="middle">${escapeHtml(String(buckets[index].bucket || ''))}</text>`).join('');
   const legend = series.map(item => `<span><i style="background:${item.color}"></i>${escapeHtml(item.label)}</span>`).join('');
-  return `<div class="metric-line-chart"><svg viewBox="0 0 ${width} ${height}" role="img" aria-label="DNS, Connect и TLS по времени">${grid}${lines}</svg><div class="metric-line-legend">${legend}</div></div>`;
+  return `<div class="metric-line-chart"><svg viewBox="0 0 ${width} ${height}" role="img" aria-label="DNS, Connect и TLS по времени">${grid}${lines}${labels}</svg><div class="metric-line-legend">${legend}</div></div>`;
 }
 function renderMetricsPanel(metrics) {
   const avgResponse = metricAverage(metrics, 'response_sum_ms');

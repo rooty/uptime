@@ -151,14 +151,15 @@ form { display: grid; gap: 14px; } label { display: grid; gap: 6px; font-weight:
 .metric-chart { display: flex; align-items: end; gap: 2px; height: 80px; margin-bottom: 10px; }
 .metric-chart span { width: 100%; color: #9298a3; text-align: center; }
 .metric-line-chart { display: grid; gap: 8px; }
-.metric-line-chart svg { width: 100%; height: 150px; overflow: visible; background: #08111d; border-radius: 5px; }
+.metric-line-chart svg { width: 100%; height: 180px; overflow: visible; background: #08111d; border-radius: 5px; }
 .metric-line-chart svg line { stroke: #26384c; stroke-width: 1; }
 .metric-line-chart svg polyline { fill: none; stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; }
 .metric-line-chart svg circle { stroke: #08111d; stroke-width: 2; }
+.metric-line-chart svg text { fill: #9298a3; font-size: 10px; }
 .metric-line-legend { display: flex; flex-wrap: wrap; gap: 10px; color: #9298a3; font-size: 12px; }
 .metric-line-legend span { display: inline-flex; align-items: center; gap: 5px; }
 .metric-line-legend i { width: 9px; height: 9px; border-radius: 50%; display: inline-block; }
-.metric-line-empty { min-height: 150px; display: grid; place-items: center; color: #9298a3; background: #08111d; border-radius: 5px; }
+.metric-line-empty { min-height: 180px; display: grid; place-items: center; color: #9298a3; background: #08111d; border-radius: 5px; }
 .metric-bar { display: block; min-width: 3px; flex: 1; border-radius: 2px 2px 0 0; }
 .metric-breakdown { display: grid; gap: 10px; margin: 20px 0; color: #9298a3; }
 .metric-breakdown b { float: right; color: #f4f4f5; }
