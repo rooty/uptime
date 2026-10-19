@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 	"strings"
 	"sync"
 	"time"
@@ -56,7 +57,7 @@ func checkWebsite(ctx context.Context, domain string, timeout time.Duration) mod
 			result.Different = true
 			result.Differences = append(result.Differences, "HTTP status отличается")
 		}
-		if results[0].FinalURL != results[1].FinalURL {
+		if normalizeWebsiteURL(results[0].FinalURL) != normalizeWebsiteURL(results[1].FinalURL) {
 			result.Different = true
 			result.Differences = append(result.Differences, "конечный URL отличается")
 		}
@@ -70,6 +71,20 @@ func checkWebsite(ctx context.Context, domain string, timeout time.Duration) mod
 		}
 	}
 	return result
+}
+
+func normalizeWebsiteURL(raw string) string {
+	parsed, err := url.Parse(raw)
+	if err != nil {
+		return strings.TrimRight(strings.ToLower(raw), "/")
+	}
+	host := strings.TrimPrefix(strings.ToLower(parsed.Host), "www.")
+	parsed.Host = host
+	parsed.Path = strings.TrimRight(parsed.Path, "/")
+	if parsed.Path == "" {
+		parsed.Path = "/"
+	}
+	return parsed.String()
 }
 
 func checkWebsiteEndpoint(parent context.Context, target string, timeout time.Duration) model.WebsiteEndpoint {

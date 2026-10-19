@@ -30,3 +30,11 @@ func TestCheckWebsiteEndpointReportsHTTPFailure(t *testing.T) {
 		t.Fatalf("unexpected website failure result: %+v", result)
 	}
 }
+
+func TestNormalizeWebsiteURLTreatsApexAndWWWAsSameSite(t *testing.T) {
+	apex := normalizeWebsiteURL("https://chm.od.ua/")
+	www := normalizeWebsiteURL("https://www.chm.od.ua/")
+	if apex != www {
+		t.Fatalf("normalized URLs differ: %q != %q", apex, www)
+	}
+}
