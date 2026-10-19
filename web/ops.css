@@ -116,8 +116,9 @@ button.primary { background: #2463d4; color: white; border-color: #2463d4; } but
 .inline-page-size .metric-line-chart { margin-top: 4px; }
 .inline-page-size .metric-line-chart svg { height: 64px; }
 .service-inline-details { min-width: 310px; color: #c7ced8; }
-.service-inline-details > div { display: inline-block; margin-right: 12px; vertical-align: middle; }
-.service-inline-details > div + div { margin-top: 5px; }
+.service-inline-details > div { display: block; margin-right: 12px; vertical-align: middle; }
+.service-inline-details > div + div { margin-top: 6px; }
+.service-inline-details > div > span { color: #929baa; }
 .service-inline-details small { margin-left: 5px !important; }
 .service-inline-details .table-status { display: inline !important; }
 .actions-heading { width: 104px; }

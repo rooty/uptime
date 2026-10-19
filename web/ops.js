@@ -102,11 +102,10 @@ function serviceHistoryBars(service) {
   }).join('');
   return `<div class="table-history-bars">${bars}</div><div class="table-history-scale"><span>48 проверок назад</span><span>Сейчас</span></div>`;
 }
-function serviceCertificate(check) {
+function certificateRemaining(check) {
   if (!check?.tls) return '—';
-  if (!check.tls.expires_at) return escapeHtml(check.tls.status || '—');
-  const date = new Date(check.tls.expires_at).toLocaleDateString();
-  return `${date}<small>${Number.isFinite(check.tls.days_remaining) ? `через ${check.tls.days_remaining} дн.` : ''}</small>`;
+  if (Number.isFinite(check.tls.days_remaining)) return `через ${check.tls.days_remaining} дн.`;
+  return check.tls.status || '—';
 }
 
 function renderServiceSidebar() {
@@ -204,7 +203,7 @@ function renderServiceTable() {
      const check = service.last_check;
      const state = check ? label : 'Pending';
       const timing = check ? `${check.response_time_ms} ms` : 'Ожидает первого запуска';
-      return `<tr class="service-row" data-service-row="${service.id}"><td class="status-col service-status-cell">${uptimeBadgeSVG(serviceUptime(service))}</td><td class="site-cell"><div class="site-name"><strong>${escapeHtml(service.name)}</strong></div><div class="site-url"><a class="table-url" href="${escapeHtml(service.url)}" target="_blank" rel="noreferrer">${escapeHtml(service.url)} ↗</a></div>${serviceHistoryBars(service)}</td><td class="inline-chart-cell"><div class="inline-metric-chart" data-inline-metrics="${service.id}" data-inline-field="response"><span class="muted">Загрузка…</span></div></td><td class="inline-chart-cell"><div class="inline-metric-chart" data-inline-metrics="${service.id}" data-inline-field="dns"><span class="muted">Загрузка…</span></div></td><td class="inline-chart-cell"><div class="inline-page-size" data-inline-metrics="${service.id}" data-inline-field="page"><span class="muted">Загрузка…</span></div></td><td class="service-inline-details"><div><small>${escapeHtml(service.check_interval || '30s')} · ${escapeHtml(timing)}</small></div><div><strong class="table-status status-${escapeHtml(status)}">${escapeHtml(state)}</strong><small>${escapeHtml(formatStatusDuration(service))}</small></div><div class="table-cert">${serviceCertificate(check)}</div></td><td class="actions-cell">${serviceActionButtons(service)}</td></tr>`;
+      return `<tr class="service-row" data-service-row="${service.id}"><td class="status-col service-status-cell">${uptimeBadgeSVG(serviceUptime(service))}</td><td class="site-cell"><div class="site-name"><strong>${escapeHtml(service.name)}</strong></div><div class="site-url"><a class="table-url" href="${escapeHtml(service.url)}" target="_blank" rel="noreferrer">${escapeHtml(service.url)} ↗</a></div>${serviceHistoryBars(service)}</td><td class="inline-chart-cell"><div class="inline-metric-chart" data-inline-metrics="${service.id}" data-inline-field="response"><span class="muted">Загрузка…</span></div></td><td class="inline-chart-cell"><div class="inline-metric-chart" data-inline-metrics="${service.id}" data-inline-field="dns"><span class="muted">Загрузка…</span></div></td><td class="inline-chart-cell"><div class="inline-page-size" data-inline-metrics="${service.id}" data-inline-field="page"><span class="muted">Загрузка…</span></div></td><td class="service-inline-details"><div><span>Время проверки:</span> <strong>${check ? `${escapeHtml(check.response_time_ms)} ms` : '—'}</strong></div><div><span>Статус:</span> <strong class="table-status status-${escapeHtml(status)}">${escapeHtml(state)}</strong> <small>${escapeHtml(formatStatusDuration(service))}</small></div><div class="table-cert"><span>До конца сертификата:</span> <strong>${escapeHtml(certificateRemaining(check))}</strong></div></td><td class="actions-cell">${serviceActionButtons(service)}</td></tr>`;
    }).join('')}</tbody></table></div>`;
   bindServiceActions(root);
   root.querySelectorAll('[data-inline-metrics]').forEach(metricsRoot => {
