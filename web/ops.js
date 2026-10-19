@@ -5,7 +5,9 @@ let mailHistory = {};
 let serviceHistory = {};
 let editingId = null;
 let viewMode = localStorage.getItem('uptime-view-mode-v2') || 'table';
-let catalogPeriod = '24h';
+const catalogPeriods = ['6h', '24h', '7d', '30d'];
+const savedCatalogPeriod = localStorage.getItem('uptime-catalog-period');
+let catalogPeriod = catalogPeriods.includes(savedCatalogPeriod) ? savedCatalogPeriod : '24h';
 const $ = id => document.getElementById(id);
 
 const checkTypeHints = {
@@ -118,6 +120,11 @@ function serviceHistoryBars(service) {
     return `<i class="table-history-bar history-${escapeHtml(status)}" title="${escapeHtml(title)}" data-history-tooltip="${escapeHtml(title)}"></i>`;
   }).join('');
   return `<div class="table-history-bars">${bars}</div><div class="table-history-scale"><span>${historyPeriodLabel(period)}</span><span>Сейчас</span></div>`;
+}
+function syncCatalogPeriodButtons() {
+  document.querySelectorAll('[data-catalog-period]').forEach(button => {
+    button.classList.toggle('active', button.dataset.catalogPeriod === catalogPeriod);
+  });
 }
 function bindHistoryTooltips(root) {
   let tooltip = document.getElementById('historyTooltip');
@@ -251,6 +258,7 @@ function bindServiceActions(root) {
 }
 function renderServiceTable() {
   const root = $('serviceList');
+  syncCatalogPeriodButtons();
   if (!services.length) { root.innerHTML = '<div class="empty">Сервисов по выбранным фильтрам нет.</div>'; return; }
   root.innerHTML = `<div class="service-table-wrap"><table class="service-table uptime-catalog"><thead><tr><th class="status-col" aria-label="Статус"></th><th>SITE (${services.length})</th><th>RESPONSE TIME</th><th>DNS + CONNECT + TLS</th><th>PAGE SIZE</th><th>OTHER DATA</th><th class="actions-heading" aria-label="Действия"></th></tr></thead><tbody>${services.map(service => {
      const [status, label] = statusLabel(service.last_check);
@@ -266,7 +274,8 @@ function renderServiceTable() {
   });
   document.querySelectorAll('[data-catalog-period]').forEach(button => button.onclick = async () => {
     catalogPeriod = button.dataset.catalogPeriod;
-    document.querySelectorAll('[data-catalog-period]').forEach(periodButton => periodButton.classList.toggle('active', periodButton === button));
+    localStorage.setItem('uptime-catalog-period', catalogPeriod);
+    syncCatalogPeriodButtons();
     renderServiceTable();
   });
 }
