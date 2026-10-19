@@ -11,6 +11,7 @@ import (
 	"strings"
 	"time"
 
+	"snippetbook/internal/httpua"
 	"snippetbook/internal/model"
 )
 
@@ -62,6 +63,7 @@ func (r *mxtoolboxBlacklistResolver) LookupBlacklist(ctx context.Context, addres
 	}
 	request.Header.Set("Authorization", r.apiKey)
 	request.Header.Set("Accept", "application/json")
+	request.Header.Set("User-Agent", httpua.UserAgent)
 	response, err := r.client.Do(request)
 	if err != nil {
 		return model.BlacklistResult{}, fmt.Errorf("mxtoolbox request: %w", err)

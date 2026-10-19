@@ -18,6 +18,7 @@ import (
 	"time"
 
 	"snippetbook/internal/domaincheck"
+	"snippetbook/internal/httpua"
 	"snippetbook/internal/mailcheck"
 	"snippetbook/internal/model"
 	"snippetbook/internal/notify"
@@ -490,6 +491,7 @@ func Check(ctx context.Context, service model.Service, timeout time.Duration, cl
 		check.Error = err.Error()
 		return check
 	}
+	req.Header.Set("User-Agent", httpua.UserAgent)
 	if client == nil {
 		client = &http.Client{Timeout: timeout}
 	}

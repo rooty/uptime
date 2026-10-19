@@ -12,6 +12,7 @@ import (
 	"sync"
 	"time"
 
+	"snippetbook/internal/httpua"
 	"snippetbook/internal/model"
 )
 
@@ -97,7 +98,7 @@ func checkWebsiteEndpoint(parent context.Context, target string, timeout time.Du
 		result.Status, result.Error = "error", err.Error()
 		return result
 	}
-	request.Header.Set("User-Agent", "SnippetBook-DomainCheck/1.0")
+	request.Header.Set("User-Agent", httpua.UserAgent)
 	response, err := client.Do(request)
 	if err != nil {
 		result.Status, result.Error = "error", fmt.Sprintf("HTTP request: %v", err)

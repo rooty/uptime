@@ -11,6 +11,7 @@ import (
 	"strings"
 	"time"
 
+	"snippetbook/internal/httpua"
 	"snippetbook/internal/model"
 )
 
@@ -66,6 +67,7 @@ func (c Client) request(ctx context.Context, endpoint, domain string) ([]byte, i
 		return nil, 0, err
 	}
 	req.Header.Set("Accept", "application/rdap+json, application/json")
+	req.Header.Set("User-Agent", httpua.UserAgent)
 	response, err := c.HTTP.Do(req)
 	if err != nil {
 		return nil, 0, err

@@ -13,6 +13,7 @@ import (
 	"strings"
 	"time"
 
+	"snippetbook/internal/httpua"
 	"snippetbook/internal/model"
 )
 
@@ -100,7 +101,7 @@ func (c Client) GenerateMailReport(ctx context.Context, settings model.AISetting
 	}
 	request.Header.Set("Authorization", "Bearer "+apiKey)
 	request.Header.Set("Content-Type", "application/json")
-	request.Header.Set("User-Agent", "SnippetBook-Mail-Diagnostics/1.0")
+	request.Header.Set("User-Agent", httpua.UserAgent)
 	httpClient := c.HTTP
 	if httpClient == nil {
 		httpClient = &http.Client{Timeout: 45 * time.Second}

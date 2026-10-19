@@ -10,6 +10,7 @@ import (
 	"strconv"
 	"strings"
 
+	"snippetbook/internal/httpua"
 	"snippetbook/internal/model"
 	"snippetbook/internal/store"
 )
@@ -115,6 +116,7 @@ func postJSON(ctx context.Context, endpoint string, payload []byte, headers http
 		return err
 	}
 	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("User-Agent", httpua.UserAgent)
 	for key, values := range headers {
 		for _, value := range values {
 			req.Header.Add(key, value)
