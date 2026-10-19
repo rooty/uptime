@@ -229,6 +229,7 @@ async function loadInlineMetrics(id, root, period) {
     if (field === 'response') root.innerHTML = metricBarChart(metrics.buckets, 'response_sum_ms', '#9e96ff', 'ms');
     if (field === 'dns') root.innerHTML = metricLineChart(metrics.buckets, [{ field: 'dns_sum_ms', label: 'DNS', color: '#78b7ff' }, { field: 'connect_sum_ms', label: 'Connect', color: '#f0bd51' }, { field: 'tls_sum_ms', label: 'TLS', color: '#55df91' }]);
     if (field === 'page') root.innerHTML = metricBarChart(metrics.buckets, 'page_size_sum_bytes', '#55df91', 'bytes');
+    bindMetricTooltips(root);
   } catch (error) {
     root.innerHTML = `<span class="muted">Нет данных: ${escapeHtml(error.message)}</span>`;
   }
@@ -238,6 +239,7 @@ async function loadExpandedMetrics(id, root, period) {
   try {
     const metrics = await api(`/services/${id}/metrics?period=${period}`);
     root.innerHTML = `${renderMetricsPanel(metrics)}<div class="metrics-footer"><span>${metrics.buckets.length} points · ${escapeHtml(period)}</span><button type="button" class="full-statistics" data-full-statistics="${id}">Full statistics</button></div>`;
+    bindMetricTooltips(root);
     root.querySelectorAll('[data-period]').forEach(button => { button.onclick = () => loadExpandedMetrics(id, root, button.dataset.period); });
     root.querySelector('[data-full-statistics]').onclick = () => openDetail(id);
   } catch (error) {
@@ -305,13 +307,13 @@ function metricLineChart(buckets, series) {
   const grid = [0, 0.5, 1].map(fraction => { const value = max * fraction; const lineY = y(value); return `<line x1="${left}" y1="${lineY}" x2="${width - right}" y2="${lineY}" /><text x="${left - 6}" y="${lineY + 4}" text-anchor="end">${Math.round(value)} ms</text>`; }).join('');
   const lines = values.map((items, seriesIndex) => {
     const points = items.map((value, index) => `${left + index * step},${y(value)}`).join(' ');
-    const dots = items.map((value, index) => `<circle cx="${left + index * step}" cy="${y(value)}" r="3"><title>${escapeHtml(series[seriesIndex].label)}: ${Math.round(value)} ms</title></circle>`).join('');
+    const dots = items.map((value, index) => { const x = left + index * step; const lineY = y(value); const tooltip = `${buckets[index].bucket || ''} · ${series[seriesIndex].label}: ${Math.round(value)} ms`; return `<circle class="metric-tooltip-target" data-tooltip="${escapeHtml(tooltip)}" data-tooltip-x="${x}" data-tooltip-y="${lineY}" cx="${x}" cy="${lineY}" r="3"><title>${escapeHtml(tooltip)}</title></circle>`; }).join('');
     return `<polyline points="${points}" stroke="${series[seriesIndex].color}" />${dots}`;
   }).join('');
   const labelIndexes = [...new Set([0, Math.floor((buckets.length - 1) / 2), buckets.length - 1])];
   const labels = labelIndexes.map(index => `<text x="${left + index * step}" y="${height - 7}" text-anchor="middle">${escapeHtml(String(buckets[index].bucket || ''))}</text>`).join('');
   const legend = series.map(item => `<span><i style="background:${item.color}"></i>${escapeHtml(item.label)}</span>`).join('');
-  return `<div class="metric-line-chart"><svg viewBox="0 0 ${width} ${height}" role="img" aria-label="DNS, Connect и TLS по времени">${grid}${lines}${labels}</svg><div class="metric-line-legend">${legend}</div></div>`;
+  return `<div class="metric-line-chart"><svg viewBox="0 0 ${width} ${height}" role="img" aria-label="DNS, Connect и TLS по времени">${grid}${lines}${labels}<g class="metric-svg-tooltip" visibility="hidden" pointer-events="none"><rect x="0" y="0" width="170" height="24" rx="4"/><text x="0" y="0"></text></g></svg><div class="metric-line-legend">${legend}</div></div>`;
 }
 function formatBytes(value) {
   const bytes = Math.max(0, Number(value) || 0);
@@ -342,10 +344,33 @@ function metricBarChart(buckets, field, color, unit) {
   const barWidth = Math.max(3, step * 0.72);
   const y = value => height - bottom - (value / max) * (height - top - bottom);
   const grid = [0, 0.5, 1].map(fraction => { const value = max * fraction; const lineY = y(value); return `<line x1="${left}" y1="${lineY}" x2="${width - right}" y2="${lineY}" /><text x="${left - 6}" y="${lineY + 4}" text-anchor="end">${escapeHtml(formatMetricValue(value, unit))}</text>`; }).join('');
-  const bars = values.map((value, index) => { const x = left + index * step + (step - barWidth) / 2; return `<rect x="${x}" y="${y(value)}" width="${barWidth}" height="${Math.max(1, height - bottom - y(value))}" fill="${color}"><title>${escapeHtml(formatMetricValue(value, unit))}</title></rect>`; }).join('');
+  const bars = values.map((value, index) => { const x = left + index * step + (step - barWidth) / 2; const lineY = y(value); const tooltip = `${buckets[index].bucket || ''} · ${formatMetricValue(value, unit)}`; return `<rect class="metric-tooltip-target" data-tooltip="${escapeHtml(tooltip)}" data-tooltip-x="${x + barWidth / 2}" data-tooltip-y="${lineY}" x="${x}" y="${lineY}" width="${barWidth}" height="${Math.max(1, height - bottom - lineY)}" fill="${color}"><title>${escapeHtml(tooltip)}</title></rect>`; }).join('');
   const labelIndexes = [...new Set([0, Math.floor((buckets.length - 1) / 2), buckets.length - 1])];
   const labels = labelIndexes.map(index => `<text x="${left + index * step + step / 2}" y="${height - 7}" text-anchor="middle">${escapeHtml(String(buckets[index].bucket || ''))}</text>`).join('');
-  return `<div class="metric-line-chart"><svg viewBox="0 0 ${width} ${height}" role="img" aria-label="График ${escapeHtml(unit === 'bytes' ? 'размера страницы' : unit)}">${grid}${bars}${labels}</svg></div>`;
+  return `<div class="metric-line-chart"><svg viewBox="0 0 ${width} ${height}" role="img" aria-label="График ${escapeHtml(unit === 'bytes' ? 'размера страницы' : unit)}">${grid}${bars}${labels}<g class="metric-svg-tooltip" visibility="hidden" pointer-events="none"><rect x="0" y="0" width="170" height="24" rx="4"/><text x="0" y="0"></text></g></svg></div>`;
+}
+function bindMetricTooltips(root) {
+  root.querySelectorAll('.metric-line-chart svg').forEach(svg => {
+    const tooltip = svg.querySelector('.metric-svg-tooltip');
+    if (!tooltip) return;
+    const box = tooltip.querySelector('rect');
+    const text = tooltip.querySelector('text');
+    svg.querySelectorAll('.metric-tooltip-target').forEach(target => {
+      target.addEventListener('mouseenter', () => {
+        const pointX = Number(target.dataset.tooltipX || 0);
+        const pointY = Number(target.dataset.tooltipY || 0);
+        const tooltipX = pointX > 390 ? pointX - 178 : pointX + 8;
+        const tooltipY = Math.max(4, pointY - 30);
+        box.setAttribute('x', tooltipX);
+        box.setAttribute('y', tooltipY);
+        text.setAttribute('x', tooltipX + 8);
+        text.setAttribute('y', tooltipY + 16);
+        text.textContent = target.dataset.tooltip || '';
+        tooltip.setAttribute('visibility', 'visible');
+      });
+      target.addEventListener('mouseleave', () => tooltip.setAttribute('visibility', 'hidden'));
+    });
+  });
 }
 function renderMetricsPanel(metrics) {
   const avgResponse = metricAverage(metrics, 'response_sum_ms');
@@ -358,6 +383,7 @@ async function loadServiceMetrics(id, period = '24h') {
   try {
     const metrics = await api(`/services/${id}/metrics?period=${period}`);
     root.innerHTML = renderMetricsPanel(metrics);
+    bindMetricTooltips(root);
     root.querySelectorAll('[data-period]').forEach(button => { button.onclick = () => loadServiceMetrics(id, button.dataset.period); });
   } catch (error) {
     root.innerHTML = `<div class="muted">Не удалось загрузить статистику: ${escapeHtml(error.message)}</div>`;

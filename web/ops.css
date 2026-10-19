@@ -212,6 +212,9 @@ form { display: grid; gap: 14px; } label { display: grid; gap: 6px; font-weight:
 .metric-line-chart svg polyline { fill: none; stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; }
 .metric-line-chart svg circle { stroke: #08111d; stroke-width: 2; }
 .metric-line-chart svg text { fill: #9298a3; font-size: 10px; }
+.metric-svg-tooltip rect { fill: #182536; stroke: #48617e; stroke-width: 1; }
+.metric-svg-tooltip text { fill: #f4f7fb !important; font-size: 10px !important; font-weight: 650; }
+.metric-tooltip-target { cursor: crosshair; }
 .metric-line-legend { display: flex; flex-wrap: wrap; gap: 10px; color: #9298a3; font-size: 12px; }
 .metric-line-legend span { display: inline-flex; align-items: center; gap: 5px; }
 .metric-line-legend i { width: 9px; height: 9px; border-radius: 50%; display: inline-block; }
