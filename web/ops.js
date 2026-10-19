@@ -334,16 +334,14 @@ function metricLineChart(buckets, series) {
     return checks > 0 ? Number(bucket[item.field] || 0) / checks : 0;
   }));
   const max = Math.max(...values.flat(), 1);
-  const step = buckets.length === 1 ? 0 : (width - left - right) / (buckets.length - 1);
   const y = value => height - bottom - (value / max) * (height - top - bottom);
   const grid = [0, 0.5, 1].map(fraction => { const value = max * fraction; const lineY = y(value); return `<line x1="${left}" y1="${lineY}" x2="${width - right}" y2="${lineY}" /><text x="${left - 6}" y="${lineY + 4}" text-anchor="end">${Math.round(value)} ms</text>`; }).join('');
   const lines = values.map((items, seriesIndex) => {
-    const points = items.map((value, index) => `${left + index * step},${y(value)}`).join(' ');
-    const dots = items.map((value, index) => { const x = left + index * step; const lineY = y(value); const tooltip = `${buckets[index].bucket || ''} · ${series[seriesIndex].label}: ${Math.round(value)} ms`; return `<circle class="metric-tooltip-target" data-tooltip="${escapeHtml(tooltip)}" data-tooltip-x="${x}" data-tooltip-y="${lineY}" cx="${x}" cy="${lineY}" r="3"><title>${escapeHtml(tooltip)}</title></circle>`; }).join('');
+    const points = items.map((value, index) => `${metricChartX(index, buckets.length, width, left, right)},${y(value)}`).join(' ');
+    const dots = items.map((value, index) => { const x = metricChartX(index, buckets.length, width, left, right); const lineY = y(value); const tooltip = `${buckets[index].bucket || ''} · ${series[seriesIndex].label}: ${Math.round(value)} ms`; return `<circle class="metric-tooltip-target" data-tooltip="${escapeHtml(tooltip)}" data-tooltip-x="${x}" data-tooltip-y="${lineY}" cx="${x}" cy="${lineY}" r="3"><title>${escapeHtml(tooltip)}</title></circle>`; }).join('');
     return `<polyline points="${points}" stroke="${series[seriesIndex].color}" />${dots}`;
   }).join('');
-  const labelIndexes = [...new Set([0, Math.floor((buckets.length - 1) / 2), buckets.length - 1])];
-  const labels = labelIndexes.map(index => `<text x="${left + index * step}" y="${height - 7}" text-anchor="middle">${escapeHtml(String(buckets[index].bucket || ''))}</text>`).join('');
+  const labels = metricTimeLabels(buckets, width, height, left, right, bottom);
   const legend = series.map(item => `<span><i style="background:${item.color}"></i>${escapeHtml(item.label)}</span>`).join('');
   return `<div class="metric-line-chart"><svg viewBox="0 0 ${width} ${height}" role="img" aria-label="DNS, Connect и TLS по времени">${grid}${lines}${labels}<g class="metric-svg-tooltip" visibility="hidden" pointer-events="none"><rect x="0" y="0" width="170" height="24" rx="4"/><text x="0" y="0"></text></g></svg><div class="metric-line-legend">${legend}</div></div>`;
 }
@@ -359,6 +357,14 @@ function formatBytes(value) {
 function formatMetricValue(value, unit) {
   return unit === 'bytes' ? formatBytes(value) : `${Math.round(value)} ${unit}`;
 }
+function metricChartX(index, count, width, left, right) {
+  if (count <= 1) return left + (width - left - right) / 2;
+  return left + index * ((width - left - right) / (count - 1));
+}
+function metricTimeLabels(buckets, width, height, left, right, bottom) {
+  const indexes = [...new Set([0, Math.floor((buckets.length - 1) / 2), buckets.length - 1])];
+  return indexes.map(index => `<text x="${metricChartX(index, buckets.length, width, left, right)}" y="${height - 7}" text-anchor="middle">${escapeHtml(String(buckets[index].bucket || ''))}</text>`).join('');
+}
 function metricBarChart(buckets, field, color, unit) {
   if (!buckets.length) return '<div class="metric-line-empty">Нет данных</div>';
   const width = 560;
@@ -372,13 +378,12 @@ function metricBarChart(buckets, field, color, unit) {
     return checks > 0 ? Number(bucket[field] || 0) / checks : 0;
   });
   const max = Math.max(...values, 1);
-  const step = (width - left - right) / values.length;
-  const barWidth = Math.max(3, step * 0.72);
+  const step = values.length <= 1 ? width - left - right : (width - left - right) / (values.length - 1);
+  const barWidth = Math.max(3, Math.min(28, step * 0.55));
   const y = value => height - bottom - (value / max) * (height - top - bottom);
   const grid = [0, 0.5, 1].map(fraction => { const value = max * fraction; const lineY = y(value); return `<line x1="${left}" y1="${lineY}" x2="${width - right}" y2="${lineY}" /><text x="${left - 6}" y="${lineY + 4}" text-anchor="end">${escapeHtml(formatMetricValue(value, unit))}</text>`; }).join('');
-  const bars = values.map((value, index) => { const x = left + index * step + (step - barWidth) / 2; const lineY = y(value); const tooltip = `${buckets[index].bucket || ''} · ${formatMetricValue(value, unit)}`; return `<rect class="metric-tooltip-target" data-tooltip="${escapeHtml(tooltip)}" data-tooltip-x="${x + barWidth / 2}" data-tooltip-y="${lineY}" x="${x}" y="${lineY}" width="${barWidth}" height="${Math.max(1, height - bottom - lineY)}" fill="${color}"><title>${escapeHtml(tooltip)}</title></rect>`; }).join('');
-  const labelIndexes = [...new Set([0, Math.floor((buckets.length - 1) / 2), buckets.length - 1])];
-  const labels = labelIndexes.map(index => `<text x="${left + index * step + step / 2}" y="${height - 7}" text-anchor="middle">${escapeHtml(String(buckets[index].bucket || ''))}</text>`).join('');
+  const bars = values.map((value, index) => { const center = metricChartX(index, values.length, width, left, right); const x = center - barWidth / 2; const lineY = y(value); const tooltip = `${buckets[index].bucket || ''} · ${formatMetricValue(value, unit)}`; return `<rect class="metric-tooltip-target" data-tooltip="${escapeHtml(tooltip)}" data-tooltip-x="${center}" data-tooltip-y="${lineY}" x="${x}" y="${lineY}" width="${barWidth}" height="${Math.max(1, height - bottom - lineY)}" fill="${color}"><title>${escapeHtml(tooltip)}</title></rect>`; }).join('');
+  const labels = metricTimeLabels(buckets, width, height, left, right, bottom);
   return `<div class="metric-line-chart"><svg viewBox="0 0 ${width} ${height}" role="img" aria-label="График ${escapeHtml(unit === 'bytes' ? 'размера страницы' : unit)}">${grid}${bars}${labels}<g class="metric-svg-tooltip" visibility="hidden" pointer-events="none"><rect x="0" y="0" width="170" height="24" rx="4"/><text x="0" y="0"></text></g></svg></div>`;
 }
 function bindMetricTooltips(root) {
