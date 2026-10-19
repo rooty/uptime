@@ -51,7 +51,12 @@ jobs:
           cache: true
 
       - name: Build release
-        run: make release-linux-amd64
+        run: |
+          set -euo pipefail
+          make release-linux-amd64 \
+            VERSION="${GITHUB_REF_NAME}-${GITHUB_SHA::7}" \
+            COMMIT="$GITHUB_SHA" \
+            BUILD_TIME="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
 
       - name: Package release
         run: tar -czf snippetbook-${GITHUB_SHA}.tgz -C dist/linux-amd64 snippetbook web
