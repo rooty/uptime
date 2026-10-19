@@ -202,7 +202,7 @@ async function loadMailMonitors() {
     mail$('monitorEditId').value = monitor.id;
     mail$('monitorDomain').value = monitor.domain;
     mail$('monitorSelector').value = monitor.dkim_selector || '';
-    mail$('monitorInterval').value = monitor.check_interval || '1h';
+     mail$('monitorInterval').value = monitor.check_interval || '24h';
     mail$('monitorSubmit').textContent = 'Сохранить изменения';
     mail$('monitorCancel').classList.remove('hidden');
     mail$('monitorMessage').textContent = 'Редактирование мониторинга';
@@ -307,10 +307,10 @@ mail$('monitorForm').onsubmit = async event => {
     const method = id ? 'PUT' : 'POST';
     await mailApi(path, { method, body: JSON.stringify({ domain: mail$('monitorDomain').value.trim(), dkim_selector: mail$('monitorSelector').value.trim(), check_interval: mail$('monitorInterval').value.trim() }) });
     mail$('monitorMessage').textContent = id ? 'Изменения сохранены.' : 'Мониторинг добавлен. Первая проверка выполняется в фоне.';
-    event.target.reset(); mail$('monitorEditId').value = ''; mail$('monitorInterval').value = '1h'; mail$('monitorSubmit').textContent = 'Добавить мониторинг'; mail$('monitorCancel').classList.add('hidden'); await loadMailMonitors();
+     event.target.reset(); mail$('monitorEditId').value = ''; mail$('monitorInterval').value = '24h'; mail$('monitorSubmit').textContent = 'Добавить мониторинг'; mail$('monitorCancel').classList.add('hidden'); await loadMailMonitors();
   } catch (error) { mail$('monitorMessage').textContent = 'Ошибка: ' + error.message; }
 };
-mail$('monitorCancel').onclick = () => { mail$('monitorForm').reset(); mail$('monitorEditId').value = ''; mail$('monitorInterval').value = '1h'; mail$('monitorSubmit').textContent = 'Добавить мониторинг'; mail$('monitorCancel').classList.add('hidden'); mail$('monitorMessage').textContent = ''; };
+mail$('monitorCancel').onclick = () => { mail$('monitorForm').reset(); mail$('monitorEditId').value = ''; mail$('monitorInterval').value = '24h'; mail$('monitorSubmit').textContent = 'Добавить мониторинг'; mail$('monitorCancel').classList.add('hidden'); mail$('monitorMessage').textContent = ''; };
 function isDomainDetailPage() { return /^\/uptime\/domain\/\d+$/.test(window.location.pathname); }
 function domainMonitorID() { return Number(window.location.pathname.split('/').pop()); }
 function setupDomainPage(detail) {

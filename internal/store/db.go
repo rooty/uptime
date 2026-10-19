@@ -213,7 +213,7 @@ func (d *DB) migrate() error {
 			id INTEGER PRIMARY KEY AUTOINCREMENT,
 			domain TEXT NOT NULL UNIQUE,
 			dkim_selector TEXT NOT NULL DEFAULT '',
-			check_interval TEXT NOT NULL DEFAULT '1h',
+			check_interval TEXT NOT NULL DEFAULT '24h',
 			enabled INTEGER NOT NULL DEFAULT 1,
 			last_status TEXT NOT NULL DEFAULT '',
 			last_score INTEGER NOT NULL DEFAULT 0,

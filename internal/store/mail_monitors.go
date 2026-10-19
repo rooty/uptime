@@ -10,7 +10,7 @@ import (
 func (d *DB) CreateMailMonitor(monitor *model.MailMonitor) error {
 	now := time.Now().UTC()
 	if monitor.CheckInterval == "" {
-		monitor.CheckInterval = "1h"
+		monitor.CheckInterval = "24h"
 	}
 	monitor.CreatedAt, monitor.UpdatedAt = now, now
 	result, err := d.sql.Exec(`INSERT INTO mail_monitors(domain,dkim_selector,check_interval,enabled,created_at,updated_at) VALUES(?,?,?,?,?,?)`,

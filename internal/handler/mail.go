@@ -171,7 +171,7 @@ func (h *MailHandler) CreateMonitor(c *gin.Context) {
 	}
 	interval := strings.TrimSpace(request.CheckInterval)
 	if interval == "" {
-		interval = "1h"
+		interval = "24h"
 	}
 	parsed, err := time.ParseDuration(interval)
 	if err != nil || parsed < time.Minute {

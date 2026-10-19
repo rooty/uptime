@@ -71,7 +71,7 @@ func (m *Monitor) Run(ctx context.Context) {
 			now := time.Now()
 			for _, mailMonitor := range mailMonitors {
 				activeMail[mailMonitor.ID] = true
-				interval := parseDurationOr(mailMonitor.CheckInterval, time.Hour)
+				interval := parseDurationOr(mailMonitor.CheckInterval, 24*time.Hour)
 				due, exists := nextMailChecks[mailMonitor.ID]
 				if exists && now.Before(due) {
 					continue
