@@ -79,6 +79,8 @@ button.primary { background: #2463d4; color: white; border-color: #2463d4; } but
 .table-history-bar.history-degraded, .table-history-bar.history-tls_error { background: #e7af35; }
 .table-history-bar.history-offline, .table-history-bar.history-not_found { background: #e7354b; }
 .table-history-scale { display: flex; justify-content: space-between; margin-top: 3px; color: #6f7c8d; font-size: 10px; white-space: nowrap; }
+.history-tooltip { position: fixed; z-index: 100; max-width: 280px; padding: 7px 10px; border: 1px solid #48617e; border-radius: 5px; background: #182536; color: #f4f7fb; font-size: 12px; line-height: 1.3; pointer-events: none; opacity: 0; transition: opacity .12s ease; }
+.history-tooltip.visible { opacity: 1; }
 .table-uptime > .uptime-svg-badge { margin-top: 6px; }
 .table-cert { min-width: 100px; }
 .table-cert small { color: #929baa; font-size: 11px; }

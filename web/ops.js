@@ -98,9 +98,31 @@ function serviceHistoryBars(service) {
     const check = checks[index - (48 - checks.length)];
     const status = check?.status || 'empty';
     const title = check ? `${check.status} · ${new Date(check.checked_at).toLocaleString()}` : 'Нет проверки';
-    return `<i class="table-history-bar history-${escapeHtml(status)}" title="${escapeHtml(title)}"></i>`;
+    return `<i class="table-history-bar history-${escapeHtml(status)}" title="${escapeHtml(title)}" data-history-tooltip="${escapeHtml(title)}"></i>`;
   }).join('');
   return `<div class="table-history-bars">${bars}</div><div class="table-history-scale"><span>48 проверок назад</span><span>Сейчас</span></div>`;
+}
+function bindHistoryTooltips(root) {
+  let tooltip = document.getElementById('historyTooltip');
+  if (!tooltip) {
+    tooltip = document.createElement('div');
+    tooltip.id = 'historyTooltip';
+    tooltip.className = 'history-tooltip';
+    document.body.appendChild(tooltip);
+  }
+  root.querySelectorAll('[data-history-tooltip]').forEach(bar => {
+    bar.addEventListener('mouseenter', () => {
+      tooltip.textContent = bar.dataset.historyTooltip || '';
+      const rect = bar.getBoundingClientRect();
+      tooltip.classList.add('visible');
+      const tooltipRect = tooltip.getBoundingClientRect();
+      const left = Math.min(Math.max(8, rect.left + rect.width / 2 - tooltipRect.width / 2), window.innerWidth - tooltipRect.width - 8);
+      const top = rect.top - tooltipRect.height - 8 >= 8 ? rect.top - tooltipRect.height - 8 : rect.bottom + 8;
+      tooltip.style.left = `${left}px`;
+      tooltip.style.top = `${top}px`;
+    });
+    bar.addEventListener('mouseleave', () => tooltip.classList.remove('visible'));
+  });
 }
 function certificateRemaining(check) {
   if (!check?.tls) return '—';
@@ -210,7 +232,8 @@ function renderServiceTable() {
      const state = check ? label : 'Pending';
       const timing = check ? `${check.response_time_ms} ms` : 'Ожидает первого запуска';
        return `<tr class="service-row" data-service-row="${service.id}"><td class="status-col service-status-cell">${uptimeBadgeSVG(serviceUptime(service))}</td><td class="site-cell"><div class="site-name"><strong>${escapeHtml(service.name)}</strong></div><div class="site-url"><a class="table-url" href="${escapeHtml(service.url)}" target="_blank" rel="noreferrer">${escapeHtml(service.url)} ↗</a></div>${serviceHistoryBars(service)}</td><td class="inline-chart-cell"><div class="inline-metric-chart" data-inline-metrics="${service.id}" data-inline-field="response"><span class="muted">Загрузка…</span></div></td><td class="inline-chart-cell"><div class="inline-metric-chart" data-inline-metrics="${service.id}" data-inline-field="dns"><span class="muted">Загрузка…</span></div></td><td class="inline-chart-cell"><div class="inline-page-size" data-inline-metrics="${service.id}" data-inline-field="page"><span class="muted">Загрузка…</span></div></td><td class="service-inline-details"><div class="service-inline-metric">${serviceMetricIcon('time', 'Время проверки')}<strong>${check ? `${escapeHtml(check.response_time_ms)} ms` : '—'}</strong></div><div><strong class="table-status status-${escapeHtml(status)}">${escapeHtml(state)}</strong> <small>${escapeHtml(formatStatusDuration(service))}</small></div><div class="service-inline-metric table-cert">${serviceMetricIcon('certificate', 'До конца сертификата')}<strong>${escapeHtml(certificateRemaining(check))}</strong></div></td><td class="actions-cell">${serviceActionButtons(service)}</td></tr>`;
-   }).join('')}</tbody></table></div>`;
+    }).join('')}</tbody></table></div>`;
+  bindHistoryTooltips(root);
   bindServiceActions(root);
   root.querySelectorAll('[data-inline-metrics]').forEach(metricsRoot => {
     loadInlineMetrics(Number(metricsRoot.dataset.inlineMetrics), metricsRoot, catalogPeriod);
