@@ -172,13 +172,19 @@ function renderServiceTable() {
     const type = canonicalCheckType(service.check_type);
     const state = check ? label : 'Pending';
     const timing = check ? `${check.response_time_ms} ms` : 'Ожидает первого запуска';
-     return `<tr class="service-row" data-service-row="${service.id}"><td class="status-col">${statusDroplet(status, label)}</td><td class="site-cell"><strong>${escapeHtml(service.name)}</strong><a class="table-url" href="${escapeHtml(service.url)}" target="_blank" rel="noreferrer">${escapeHtml(service.url)} ↗</a></td><td><span class="type-label">${escapeHtml(capabilityLabels[type] || type)}</span><small>${escapeHtml(service.check_interval || '30s')} · ${escapeHtml(timing)}</small></td><td><strong class="table-status status-${escapeHtml(status)}">${escapeHtml(state)}</strong></td><td class="row-period-label">${catalogPeriod}</td><td>${uptimeBadgeSVG(serviceUptime(service))}</td><td class="metrics-cell">${check ? `${escapeHtml(check.response_time_ms)} ms` : '<em>Ожидание</em>'}</td><td class="actions-cell">${serviceActionButtons(service)}</td></tr>`;
+     return `<tr class="service-row" data-service-row="${service.id}"><td class="status-col">${statusDroplet(status, label)}</td><td class="site-cell"><strong>${escapeHtml(service.name)}</strong><a class="table-url" href="${escapeHtml(service.url)}" target="_blank" rel="noreferrer">${escapeHtml(service.url)} ↗</a></td><td><span class="type-label">${escapeHtml(capabilityLabels[type] || type)}</span><small>${escapeHtml(service.check_interval || '30s')} · ${escapeHtml(timing)}</small></td><td><strong class="table-status status-${escapeHtml(status)}">${escapeHtml(state)}</strong></td><td class="row-period-label">${catalogPeriod}</td><td>${uptimeBadgeSVG(serviceUptime(service))}</td><td class="metrics-cell">${check ? `${escapeHtml(check.response_time_ms)} ms` : '<em>Ожидание</em>'}</td><td class="actions-cell">${serviceActionButtons(service)}</td></tr><tr class="service-statistics"><td colspan="8"><details data-service-metrics="${service.id}"><summary>Показать графики и статистику</summary><div class="expanded-metrics" data-metrics-root="${service.id}"><span class="muted">Откройте спойлер для загрузки статистики</span></div></details></td></tr>`;
   }).join('')}</tbody></table></div>`;
   bindServiceActions(root);
+  root.querySelectorAll('[data-service-metrics]').forEach(details => details.addEventListener('toggle', () => {
+    if (!details.open || details.dataset.loaded === 'true') return;
+    details.dataset.loaded = 'true';
+    loadExpandedMetrics(Number(details.dataset.serviceMetrics), details.querySelector('[data-metrics-root]'), catalogPeriod);
+  }));
   root.querySelectorAll('[data-catalog-period]').forEach(button => button.onclick = async () => {
     catalogPeriod = button.dataset.catalogPeriod;
     root.querySelectorAll('[data-catalog-period]').forEach(periodButton => periodButton.classList.toggle('active', periodButton === button));
-    renderServiceTable();
+    root.querySelectorAll('.row-period-label').forEach(label => { label.textContent = catalogPeriod; });
+    root.querySelectorAll('[data-service-metrics][open]').forEach(details => loadExpandedMetrics(Number(details.dataset.serviceMetrics), details.querySelector('[data-metrics-root]'), catalogPeriod));
   });
 }
 async function loadExpandedMetrics(id, root, period) {
