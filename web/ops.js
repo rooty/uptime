@@ -92,15 +92,32 @@ function formatStatusDuration(service) {
   if (hours < 24) return `${hours} ч. ${minutes % 60} мин.`;
   return `${Math.floor(hours / 24)} дн. ${hours % 24} ч.`;
 }
+function historyPeriodMs(period) {
+  return { '6h': 6, '24h': 24, '7d': 24 * 7, '30d': 24 * 30 }[period] * 60 * 60 * 1000;
+}
+function historyPeriodLabel(period) {
+  return { '6h': '6 часов назад', '24h': '24 часа назад', '7d': '7 дней назад', '30d': '30 дней назад' }[period] || period;
+}
 function serviceHistoryBars(service) {
-  const checks = [...(serviceHistory[service.id] || [])].sort((a, b) => new Date(a.checked_at) - new Date(b.checked_at)).slice(-48);
+  const period = catalogPeriod || '6h';
+  const duration = historyPeriodMs(period);
+  const slotDuration = duration / 48;
+  const end = Date.now();
+  const start = end - duration;
+  const checks = [...(serviceHistory[service.id] || [])].sort((a, b) => new Date(a.checked_at) - new Date(b.checked_at));
   const bars = Array.from({ length: 48 }, (_, index) => {
-    const check = checks[index - (48 - checks.length)];
+    const slotStart = start + index * slotDuration;
+    const slotEnd = slotStart + slotDuration;
+    const slotChecks = checks.filter(item => {
+      const checkedAt = new Date(item.checked_at).getTime();
+      return checkedAt >= slotStart && checkedAt < slotEnd;
+    });
+    const check = slotChecks[slotChecks.length - 1];
     const status = check?.status || 'empty';
     const title = check ? `${check.status} · ${new Date(check.checked_at).toLocaleString()}` : 'Нет проверки';
     return `<i class="table-history-bar history-${escapeHtml(status)}" title="${escapeHtml(title)}" data-history-tooltip="${escapeHtml(title)}"></i>`;
   }).join('');
-  return `<div class="table-history-bars">${bars}</div><div class="table-history-scale"><span>48 проверок назад</span><span>Сейчас</span></div>`;
+  return `<div class="table-history-bars">${bars}</div><div class="table-history-scale"><span>${historyPeriodLabel(period)}</span><span>Сейчас</span></div>`;
 }
 function bindHistoryTooltips(root) {
   let tooltip = document.getElementById('historyTooltip');
@@ -250,17 +267,16 @@ function renderServiceTable() {
   document.querySelectorAll('[data-catalog-period]').forEach(button => button.onclick = async () => {
     catalogPeriod = button.dataset.catalogPeriod;
     document.querySelectorAll('[data-catalog-period]').forEach(periodButton => periodButton.classList.toggle('active', periodButton === button));
-    root.querySelectorAll('.row-period-label').forEach(label => { label.textContent = catalogPeriod; });
-    root.querySelectorAll('[data-inline-metrics]').forEach(metricsRoot => loadInlineMetrics(Number(metricsRoot.dataset.inlineMetrics), metricsRoot, catalogPeriod));
+    renderServiceTable();
   });
 }
 async function loadInlineMetrics(id, root, period) {
   try {
     const metrics = await api(`/services/${id}/metrics?period=${period}`);
     const field = root.dataset.inlineField;
-    if (field === 'response') root.innerHTML = metricBarChart(metrics.buckets, 'response_sum_ms', '#9e96ff', 'ms');
-    if (field === 'dns') root.innerHTML = metricLineChart(metrics.buckets, [{ field: 'dns_sum_ms', label: 'DNS', color: '#78b7ff' }, { field: 'connect_sum_ms', label: 'Connect', color: '#f0bd51' }, { field: 'tls_sum_ms', label: 'TLS', color: '#55df91' }]);
-    if (field === 'page') root.innerHTML = metricBarChart(metrics.buckets, 'page_size_sum_bytes', '#55df91', 'bytes');
+    if (field === 'response') root.innerHTML = metricBarChart(metrics.buckets, 'response_sum_ms', '#9e96ff', 'ms', period);
+    if (field === 'dns') root.innerHTML = metricLineChart(metrics.buckets, [{ field: 'dns_sum_ms', label: 'DNS', color: '#78b7ff' }, { field: 'connect_sum_ms', label: 'Connect', color: '#f0bd51' }, { field: 'tls_sum_ms', label: 'TLS', color: '#55df91' }], period);
+    if (field === 'page') root.innerHTML = metricBarChart(metrics.buckets, 'page_size_sum_bytes', '#55df91', 'bytes', period);
     bindMetricTooltips(root);
   } catch (error) {
     root.innerHTML = `<span class="muted">Нет данных: ${escapeHtml(error.message)}</span>`;
@@ -321,7 +337,7 @@ function metricBars(buckets, value, color) {
   const max = Math.max(...values, 1);
   return values.map((item, index) => `<i class="metric-bar" style="height:${Math.max(4, item / max * 100)}%;background:${color}" title="${escapeHtml(buckets[index].bucket)}: ${item}"></i>`).join('');
 }
-function metricLineChart(buckets, series) {
+function metricLineChart(buckets, series, period = '24h') {
   if (!buckets.length) return '<div class="metric-line-empty">Нет данных</div>';
   const width = 560;
   const height = 180;
@@ -337,11 +353,11 @@ function metricLineChart(buckets, series) {
   const y = value => height - bottom - (value / max) * (height - top - bottom);
   const grid = [0, 0.5, 1].map(fraction => { const value = max * fraction; const lineY = y(value); return `<line x1="${left}" y1="${lineY}" x2="${width - right}" y2="${lineY}" /><text x="${left - 6}" y="${lineY + 4}" text-anchor="end">${Math.round(value)} ms</text>`; }).join('');
   const lines = values.map((items, seriesIndex) => {
-    const points = items.map((value, index) => `${metricChartX(index, buckets.length, width, left, right)},${y(value)}`).join(' ');
-    const dots = items.map((value, index) => { const x = metricChartX(index, buckets.length, width, left, right); const lineY = y(value); const tooltip = `${buckets[index].bucket || ''} · ${series[seriesIndex].label}: ${Math.round(value)} ms`; return `<circle class="metric-tooltip-target" data-tooltip="${escapeHtml(tooltip)}" data-tooltip-x="${x}" data-tooltip-y="${lineY}" cx="${x}" cy="${lineY}" r="3"><title>${escapeHtml(tooltip)}</title></circle>`; }).join('');
+    const points = items.map((value, index) => `${metricChartX(buckets[index], index, buckets, period, width, left, right)},${y(value)}`).join(' ');
+    const dots = items.map((value, index) => { const x = metricChartX(buckets[index], index, buckets, period, width, left, right); const lineY = y(value); const tooltip = `${buckets[index].bucket || ''} · ${series[seriesIndex].label}: ${Math.round(value)} ms`; return `<circle class="metric-tooltip-target" data-tooltip="${escapeHtml(tooltip)}" data-tooltip-x="${x}" data-tooltip-y="${lineY}" cx="${x}" cy="${lineY}" r="3"><title>${escapeHtml(tooltip)}</title></circle>`; }).join('');
     return `<polyline points="${points}" stroke="${series[seriesIndex].color}" />${dots}`;
   }).join('');
-  const labels = metricTimeLabels(buckets, width, height, left, right, bottom);
+  const labels = metricTimeLabels(period, width, height, left, right);
   const legend = series.map(item => `<span><i style="background:${item.color}"></i>${escapeHtml(item.label)}</span>`).join('');
   return `<div class="metric-line-chart"><svg viewBox="0 0 ${width} ${height}" role="img" aria-label="DNS, Connect и TLS по времени">${grid}${lines}${labels}<g class="metric-svg-tooltip" visibility="hidden" pointer-events="none"><rect x="0" y="0" width="170" height="24" rx="4"/><text x="0" y="0"></text></g></svg><div class="metric-line-legend">${legend}</div></div>`;
 }
@@ -357,15 +373,31 @@ function formatBytes(value) {
 function formatMetricValue(value, unit) {
   return unit === 'bytes' ? formatBytes(value) : `${Math.round(value)} ${unit}`;
 }
-function metricChartX(index, count, width, left, right) {
-  if (count <= 1) return left + (width - left - right) / 2;
-  return left + index * ((width - left - right) / (count - 1));
+function metricChartX(bucket, index, buckets, period, width, left, right) {
+  const duration = historyPeriodMs(period || '24h');
+  const end = Date.now();
+  const start = end - duration;
+  const timestamp = Date.parse(bucket?.bucket || '');
+  if (Number.isFinite(timestamp)) {
+    const ratio = Math.max(0, Math.min(1, (timestamp - start) / duration));
+    return left + ratio * (width - left - right);
+  }
+  if (buckets.length <= 1) return left + (width - left - right) / 2;
+  return left + index * ((width - left - right) / (buckets.length - 1));
 }
-function metricTimeLabels(buckets, width, height, left, right, bottom) {
-  const indexes = [...new Set([0, Math.floor((buckets.length - 1) / 2), buckets.length - 1])];
-  return indexes.map(index => `<text x="${metricChartX(index, buckets.length, width, left, right)}" y="${height - 7}" text-anchor="middle">${escapeHtml(String(buckets[index].bucket || ''))}</text>`).join('');
+function metricTimeLabel(timestamp) {
+  return new Date(timestamp).toLocaleString('ru-RU', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
 }
-function metricBarChart(buckets, field, color, unit) {
+function metricTimeLabels(period, width, height, left, right) {
+  const duration = historyPeriodMs(period || '24h');
+  const end = Date.now();
+  const start = end - duration;
+  return [start, start + duration / 2, end].map(timestamp => {
+    const x = left + ((timestamp - start) / duration) * (width - left - right);
+    return `<text x="${x}" y="${height - 7}" text-anchor="middle">${escapeHtml(metricTimeLabel(timestamp))}</text>`;
+  }).join('');
+}
+function metricBarChart(buckets, field, color, unit, period = '24h') {
   if (!buckets.length) return '<div class="metric-line-empty">Нет данных</div>';
   const width = 560;
   const height = 180;
@@ -382,8 +414,8 @@ function metricBarChart(buckets, field, color, unit) {
   const barWidth = Math.max(3, Math.min(28, step * 0.55));
   const y = value => height - bottom - (value / max) * (height - top - bottom);
   const grid = [0, 0.5, 1].map(fraction => { const value = max * fraction; const lineY = y(value); return `<line x1="${left}" y1="${lineY}" x2="${width - right}" y2="${lineY}" /><text x="${left - 6}" y="${lineY + 4}" text-anchor="end">${escapeHtml(formatMetricValue(value, unit))}</text>`; }).join('');
-  const bars = values.map((value, index) => { const center = metricChartX(index, values.length, width, left, right); const x = center - barWidth / 2; const lineY = y(value); const tooltip = `${buckets[index].bucket || ''} · ${formatMetricValue(value, unit)}`; return `<rect class="metric-tooltip-target" data-tooltip="${escapeHtml(tooltip)}" data-tooltip-x="${center}" data-tooltip-y="${lineY}" x="${x}" y="${lineY}" width="${barWidth}" height="${Math.max(1, height - bottom - lineY)}" fill="${color}"><title>${escapeHtml(tooltip)}</title></rect>`; }).join('');
-  const labels = metricTimeLabels(buckets, width, height, left, right, bottom);
+  const bars = values.map((value, index) => { const center = metricChartX(buckets[index], index, buckets, period, width, left, right); const x = center - barWidth / 2; const lineY = y(value); const tooltip = `${buckets[index].bucket || ''} · ${formatMetricValue(value, unit)}`; return `<rect class="metric-tooltip-target" data-tooltip="${escapeHtml(tooltip)}" data-tooltip-x="${center}" data-tooltip-y="${lineY}" x="${x}" y="${lineY}" width="${barWidth}" height="${Math.max(1, height - bottom - lineY)}" fill="${color}"><title>${escapeHtml(tooltip)}</title></rect>`; }).join('');
+  const labels = metricTimeLabels(period, width, height, left, right);
   return `<div class="metric-line-chart"><svg viewBox="0 0 ${width} ${height}" role="img" aria-label="График ${escapeHtml(unit === 'bytes' ? 'размера страницы' : unit)}">${grid}${bars}${labels}<g class="metric-svg-tooltip" visibility="hidden" pointer-events="none"><rect x="0" y="0" width="170" height="24" rx="4"/><text x="0" y="0"></text></g></svg></div>`;
 }
 function bindMetricTooltips(root) {
@@ -412,7 +444,7 @@ function bindMetricTooltips(root) {
 function renderMetricsPanel(metrics) {
   const avgResponse = metricAverage(metrics, 'response_sum_ms');
   const avgPageSize = metricAverage(metrics, 'page_size_sum_bytes');
-  return `<section class="service-metrics"><div class="metrics-toolbar"><strong>Статистика</strong><div>${['6h', '24h', '7d', '30d'].map(period => `<button type="button" class="metric-period ${metrics.period === period ? 'primary' : ''}" data-period="${period}">${period}</button>`).join('')}</div></div><div class="metric-summary"><div><strong>${metrics.uptime_percent.toFixed(2)}%</strong><span>Uptime</span></div><div><strong>${metrics.total_checks}</strong><span>Проверок</span></div><div><strong>${metrics.online_checks}</strong><span>Online</span></div><div><strong>${avgResponse} ms</strong><span>Средний response</span></div></div><div class="metric-panels"><article><h4>RESPONSE TIME</h4>${metricBarChart(metrics.buckets, 'response_sum_ms', '#9e96ff', 'ms')}<small>Среднее: ${avgResponse} ms · максимум: ${Math.max(...metrics.buckets.map(bucket => bucket.response_max_ms || 0), 0)} ms</small></article><article><h4>DNS + CONNECT + TLS</h4>${metricLineChart(metrics.buckets, [{ field: 'dns_sum_ms', label: 'DNS', color: '#78b7ff' }, { field: 'connect_sum_ms', label: 'Connect', color: '#f0bd51' }, { field: 'tls_sum_ms', label: 'TLS', color: '#55df91' }])}<small>Средние значения по проверкам</small></article><article><h4>PAGE SIZE</h4>${metricBarChart(metrics.buckets, 'page_size_sum_bytes', '#55df91', 'bytes')}<small>Средний размер: ${formatBytes(avgPageSize)}</small></article></div></section>`;
+  return `<section class="service-metrics"><div class="metrics-toolbar"><strong>Статистика</strong><div>${['6h', '24h', '7d', '30d'].map(period => `<button type="button" class="metric-period ${metrics.period === period ? 'primary' : ''}" data-period="${period}">${period}</button>`).join('')}</div></div><div class="metric-summary"><div><strong>${metrics.uptime_percent.toFixed(2)}%</strong><span>Uptime</span></div><div><strong>${metrics.total_checks}</strong><span>Проверок</span></div><div><strong>${metrics.online_checks}</strong><span>Online</span></div><div><strong>${avgResponse} ms</strong><span>Средний response</span></div></div><div class="metric-panels"><article><h4>RESPONSE TIME</h4>${metricBarChart(metrics.buckets, 'response_sum_ms', '#9e96ff', 'ms', metrics.period)}<small>Среднее: ${avgResponse} ms · максимум: ${Math.max(...metrics.buckets.map(bucket => bucket.response_max_ms || 0), 0)} ms</small></article><article><h4>DNS + CONNECT + TLS</h4>${metricLineChart(metrics.buckets, [{ field: 'dns_sum_ms', label: 'DNS', color: '#78b7ff' }, { field: 'connect_sum_ms', label: 'Connect', color: '#f0bd51' }, { field: 'tls_sum_ms', label: 'TLS', color: '#55df91' }], metrics.period)}<small>Средние значения по проверкам</small></article><article><h4>PAGE SIZE</h4>${metricBarChart(metrics.buckets, 'page_size_sum_bytes', '#55df91', 'bytes', metrics.period)}<small>Средний размер: ${formatBytes(avgPageSize)}</small></article></div></section>`;
 }
 async function loadServiceMetrics(id, period = '24h') {
   const root = $('serviceMetrics');
