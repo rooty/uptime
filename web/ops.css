@@ -95,6 +95,9 @@ button.primary { background: #2463d4; color: white; border-color: #2463d4; } but
 .service-status-cell .uptime-svg-badge { display: inline-block; vertical-align: middle; }
 .service-status-cell .uptime-svg-badge { margin-left: 8px; }
 .uptime-catalog .site-cell { min-width: 250px; }
+.uptime-catalog .service-row .site-cell strong,
+.uptime-catalog .service-row .site-cell .table-url { display: block; }
+.uptime-catalog .service-row .site-cell .table-url { margin-left: 0; margin-top: 4px; }
 .uptime-catalog .site-cell .table-history-bars { margin-top: 8px; }
 .inline-chart-cell { min-width: 235px; width: 20%; }
 .inline-metric-chart { min-width: 220px; }
