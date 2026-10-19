@@ -228,7 +228,7 @@ async function loadInlineMetrics(id, root, period) {
     const field = root.dataset.inlineField;
     if (field === 'response') root.innerHTML = metricBarChart(metrics.buckets, 'response_sum_ms', '#9e96ff', 'ms');
     if (field === 'dns') root.innerHTML = metricLineChart(metrics.buckets, [{ field: 'dns_sum_ms', label: 'DNS', color: '#78b7ff' }, { field: 'connect_sum_ms', label: 'Connect', color: '#f0bd51' }, { field: 'tls_sum_ms', label: 'TLS', color: '#55df91' }]);
-    if (field === 'page') root.innerHTML = `<span>PAGE SIZE <strong>${formatBytes(metricAverage(metrics, 'page_size_sum_bytes'))}</strong></span>${metricBarChart(metrics.buckets, 'page_size_sum_bytes', '#55df91', 'bytes')}`;
+    if (field === 'page') root.innerHTML = `<span><strong>${formatBytes(metricAverage(metrics, 'page_size_sum_bytes'))}</strong></span>${metricBarChart(metrics.buckets, 'page_size_sum_bytes', '#55df91', 'bytes')}`;
   } catch (error) {
     root.innerHTML = `<span class="muted">Нет данных: ${escapeHtml(error.message)}</span>`;
   }
