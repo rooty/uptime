@@ -14,7 +14,13 @@ import (
 
 func SetupRouter(st *store.DB, v *crypto.Vault) *gin.Engine {
 	r := gin.Default()
+	r.Use(func(c *gin.Context) {
+		c.Header("X-App-Version", version.Version)
+		c.Header("X-App-Commit", version.Commit)
+		c.Next()
+	})
 	health := func(c *gin.Context) {
+		c.Header("Cache-Control", "no-store, no-cache, must-revalidate, max-age=0")
 		c.JSON(200, gin.H{
 			"status":         "ok",
 			"version":        version.Version,
@@ -84,19 +90,19 @@ func SetupRouter(st *store.DB, v *crypto.Vault) *gin.Engine {
 	}
 
 	// SPA assets (explicit, to avoid clashing with /api routes)
-	r.StaticFile("/index.html", "./web/index.html")
-	r.StaticFile("/styles.css", "./web/styles.css")
-	r.StaticFile("/app.js", "./web/app.js")
-	r.StaticFile("/ops.js", "./web/ops.js")
-	r.StaticFile("/ops.css", "./web/ops.css")
-	r.StaticFile("/settings.js", "./web/settings.js")
-	r.StaticFile("/mail.css", "./web/mail.css")
-	r.StaticFile("/mail.js", "./web/mail.js")
-	r.GET("/uptime", access, func(c *gin.Context) { c.File("./web/ops.html") })
-	r.GET("/uptime/settings", access, func(c *gin.Context) { c.File("./web/settings.html") })
-	r.GET("/uptime/domain", access, func(c *gin.Context) { c.File("./web/mail.html") })
-	r.GET("/uptime/domain/:id", access, func(c *gin.Context) { c.File("./web/mail.html") })
-	r.GET("/", func(c *gin.Context) { c.File("./web/index.html") })
+	r.GET("/index.html", noCacheFile("./web/index.html"))
+	r.GET("/styles.css", noCacheFile("./web/styles.css"))
+	r.GET("/app.js", noCacheFile("./web/app.js"))
+	r.GET("/ops.js", noCacheFile("./web/ops.js"))
+	r.GET("/ops.css", noCacheFile("./web/ops.css"))
+	r.GET("/settings.js", noCacheFile("./web/settings.js"))
+	r.GET("/mail.css", noCacheFile("./web/mail.css"))
+	r.GET("/mail.js", noCacheFile("./web/mail.js"))
+	r.GET("/uptime", access, noCacheFile("./web/ops.html"))
+	r.GET("/uptime/settings", access, noCacheFile("./web/settings.html"))
+	r.GET("/uptime/domain", access, noCacheFile("./web/mail.html"))
+	r.GET("/uptime/domain/:id", access, noCacheFile("./web/mail.html"))
+	r.GET("/", noCacheFile("./web/index.html"))
 	r.NoRoute(func(c *gin.Context) {
 		if strings.HasPrefix(c.Request.URL.Path, "/api/") {
 			c.JSON(404, gin.H{"error": "API endpoint not found"})
@@ -106,7 +112,16 @@ func SetupRouter(st *store.DB, v *crypto.Vault) *gin.Engine {
 			c.Status(404)
 			return
 		}
-		c.File("./web/index.html")
+		noCacheFile("./web/index.html")(c)
 	})
 	return r
+}
+
+func noCacheFile(path string) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		c.Header("Cache-Control", "no-store, no-cache, must-revalidate, max-age=0")
+		c.Header("Pragma", "no-cache")
+		c.Header("Expires", "0")
+		c.File(path)
+	}
 }

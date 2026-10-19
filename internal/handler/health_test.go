@@ -29,6 +29,9 @@ func TestHealthzReturnsBuildInformation(t *testing.T) {
 	if response.Code != http.StatusOK {
 		t.Fatalf("status = %d, want %d", response.Code, http.StatusOK)
 	}
+	if response.Header().Get("X-App-Version") == "" || response.Header().Get("Cache-Control") == "" {
+		t.Fatalf("unexpected health headers: %v", response.Header())
+	}
 	var payload map[string]any
 	if err := json.Unmarshal(response.Body.Bytes(), &payload); err != nil {
 		t.Fatalf("decode response: %v", err)

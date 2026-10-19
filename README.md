@@ -23,6 +23,10 @@ go run .
 статус процесса, версию сборки, commit, время сборки и uptime. Защищённый API-вариант доступен по
 адресу `GET /api/v1/health`.
 
+HTML, CSS и JavaScript приложение отдаёт с `Cache-Control: no-store`, поэтому браузер каждый раз
+проверяет актуальную версию frontend. В ответах также доступны заголовки `X-App-Version` и
+`X-App-Commit`.
+
 При release-сборке версию можно задать так:
 
 ```bash
