@@ -1,0 +1,32 @@
+[Unit]
+Description=SnippetBook Uptime Board
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+WorkingDirectory=/opt/snippetbook
+EnvironmentFile=/opt/snippetbook/.env
+Environment=HOME=/root
+ExecStartPre=/usr/bin/test -x /opt/snippetbook/snippetbook
+ExecStart=/opt/snippetbook/snippetbook
+Restart=on-failure
+RestartSec=5s
+TimeoutStopSec=15s
+
+# Приложению нужен доступ на запись только к каталогу установки:
+# здесь хранится SQLite-файл и локальный vault.
+ProtectSystem=strict
+ReadWritePaths=/opt/snippetbook
+ProtectHome=true
+PrivateTmp=true
+PrivateDevices=true
+NoNewPrivileges=true
+RestrictSUIDSGID=true
+RestrictRealtime=true
+LockPersonality=true
+MemoryDenyWriteExecute=true
+SystemCallArchitectures=native
+
+[Install]
+WantedBy=multi-user.target

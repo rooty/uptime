@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>SnippetBook — локальная записная книжка</title>
+<link rel="stylesheet" href="/styles.css" />
+</head>
+<body>
+<div id="app">
+  <header class="topbar">
+    <div class="brand">SnippetBook</div>
+    <div class="searchbox">
+      <input id="search" type="search" placeholder="Поиск по записям…" />
+    </div>
+    <div class="top-actions">
+      <select id="kindFilter">
+        <option value="">Все типы</option>
+        <option value="snippet">Сниппеты</option>
+        <option value="note">Заметки</option>
+        <option value="secret">Ключи</option>
+      </select>
+      <select id="tagFilter"><option value="">Все теги</option></select>
+      <button id="btnNew" class="primary">+ Новая запись</button>
+      <a href="/uptime" class="ops-link">Local Uptime</a>
+      <a href="/uptime/domain" class="ops-link">Domains</a>
+    </div>
+  </header>
+
+  <main class="layout">
+    <aside class="sidebar">
+      <section>
+        <h2>Теги</h2>
+        <div id="tagList" class="tag-cloud"></div>
+      </section>
+    </aside>
+
+    <section class="content">
+      <div id="list" class="list"></div>
+    </section>
+  </main>
+</div>
+
+<!-- Modal -->
+<div id="modal" class="modal hidden">
+  <div class="modal-card">
+    <div class="modal-header">
+      <h3 id="modalTitle">Новая запись</h3>
+      <button id="modalClose" class="icon-btn">✕</button>
+    </div>
+    <form id="itemForm">
+      <label>Тип
+        <select id="fKind">
+          <option value="snippet">Сниппет</option>
+          <option value="note">Заметка</option>
+          <option value="secret">Ключ/секрет</option>
+        </select>
+      </label>
+      <label>Заголовок
+        <input id="fTitle" required />
+      </label>
+      <label>Язык (для сниппетов)
+        <input id="fLang" placeholder="go, js, python…" />
+      </label>
+      <label>Содержимое
+        <textarea id="fContent" rows="8"></textarea>
+      </label>
+      <label>Секретное значение (только для ключей)
+        <input id="fSecret" type="password" placeholder="Оставьте пустым, чтобы не менять" />
+      </label>
+      <label>Теги (через запятую)
+        <input id="fTags" />
+      </label>
+      <label class="checkbox">
+        <input id="fFav" type="checkbox" /> В избранное
+      </label>
+      <div class="btn-row">
+        <button type="submit" class="primary">Сохранить</button>
+        <button type="button" id="modalCancel">Отмена</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script src="/app.js"></script>
+</body>
+</html>

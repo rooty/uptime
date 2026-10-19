@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Local Ops Board</title>
+  <link rel="stylesheet" href="/ops.css?v=18" />
+</head>
+<body>
+  <header class="topbar"><div><strong>Local Ops Board</strong><span class="muted"> локальный контроль сервисов</span></div><div class="top-actions"><a href="/uptime/domain">Domains</a><a href="/uptime/settings">Настройки</a><button id="notificationsButton">Уведомления</button><a href="/">SnippetBook</a></div></header>
+  <main class="shell">
+    <div class="ops-layout">
+      <aside class="service-sidebar panel"><div class="sidebar-head"><div><h2>Сервисы</h2><p class="muted">Состояние и история</p></div><button id="newService" class="primary" title="Добавить сервис">+</button></div><div id="serviceSidebarList" class="service-sidebar-list"></div><div class="mail-sidebar-section"><div class="sidebar-head"><div><h2>Domains</h2><p class="muted">Постоянные проверки</p></div><a class="sidebar-add" href="/uptime/domain" title="Добавить проверку домена">+</a></div><div id="mailSidebarList" class="service-sidebar-list"></div></div></aside>
+      <div class="ops-content">
+    <section class="summary"><div class="metric"><span>Всего</span><strong id="total">0</strong></div><div class="metric online"><span>Работают</span><strong id="online">0</strong></div><div class="metric degraded"><span>Проблемы</span><strong id="degraded">0</strong></div><div class="metric offline"><span>Недоступны</span><strong id="offline">0</strong></div></section>
+    <section class="panel service-catalog-panel"><div class="panel-head"><div><h1>Сервисы</h1><p class="muted">Проверяйте важные endpoints в одном месте.</p></div><div class="actions"><button id="checkAll">Проверить всё</button><button id="cardView" type="button">Карточки</button><button id="tableView" type="button">Таблица</button></div></div>
+      <div class="service-search"><input id="serviceSearch" placeholder="Поиск по названию, URL, описанию или тегу" /><button id="applyFilters">Применить</button></div>
+      <div class="filters"><select id="environmentFilter"><option value="">Все окружения</option><option>production</option><option>staging</option><option>development</option></select><select id="typeFilter"><option value="">Все типы</option><option value="http">HTTP(s)</option><option value="smtp">SMTP(s)</option><option value="imap">IMAP(s)</option><option value="pop3">POP3(s)</option><option value="mysql">MySQL</option><option value="redis">Redis(s)</option><option value="rabbitmq">RabbitMQ / AMQP(s)</option><option value="postgres">PostgreSQL</option></select><input id="tagFilter" placeholder="Фильтр по тегу" /><select id="statusFilter"><option value="">Все статусы</option><option value="online">Работает</option><option value="degraded">Проблемы</option><option value="offline">Недоступен</option><option value="tls_error">TLS error</option></select><select id="sortFilter"><option value="name">По имени</option><option value="status">По статусу</option><option value="response_time">По response time</option><option value="last_check">По последней проверке</option></select></div>
+      <div id="serviceList" class="service-list"></div>
+    </section>
+    <section class="grid-panels"><section class="panel"><h2>Последние ошибки</h2><div id="recentErrors" class="compact-list"></div></section><section class="panel"><h2>Response time</h2><div id="responseTimes" class="chart"></div></section></section>
+      </div>
+    </div>
+  </main>
+  <div id="modal" class="modal hidden"><div class="modal-card"><div class="panel-head"><h2 id="modalTitle">Новый сервис</h2><button id="closeModal">×</button></div><form id="serviceForm"><label>Название<input id="name" required maxlength="120" /></label><label>Тип проверки<select id="checkType"><option value="http">HTTP</option><option value="https">HTTPS</option><option value="smtp">SMTP</option><option value="smtps">SMTP TLS</option><option value="imap">IMAP</option><option value="imaps">IMAP TLS</option><option value="pop3">POP3</option><option value="pop3s">POP3 TLS</option><option value="mysql">MySQL</option><option value="redis">Redis</option><option value="rediss">Redis TLS</option><option value="rabbitmq">RabbitMQ</option><option value="amqp">AMQP</option><option value="amqps">AMQP TLS</option><option value="postgres">PostgreSQL</option><option value="postgresql">PostgreSQL (alias)</option></select></label><label>URL или endpoint<input id="url" type="url" placeholder="https://example.com/health или redis://host:6379" required /></label><label>Окружение<select id="environment"><option>production</option><option>staging</option><option>development</option></select></label><label>Интервал проверки<input id="serviceCheckInterval" placeholder="30s" required /></label><label class="check"><input id="repeatNotificationsEnabled" type="checkbox" /> Повторять уведомления о проблеме</label><label>Повторять через<input id="repeatNotificationInterval" placeholder="5m" required /></label><label>Описание<textarea id="description" rows="3"></textarea></label><label>Теги<input id="tags" placeholder="api, critical" /></label><label class="check"><input id="enabled" type="checkbox" checked /> Проверять автоматически</label><div class="form-actions"><button type="button" id="cancel">Отмена</button><button class="primary" type="submit">Сохранить</button></div></form></div></div>
+  <div id="detailModal" class="modal hidden"><div class="modal-card wide"><div class="panel-head"><h2 id="detailTitle">Детали сервиса</h2><button id="closeDetail">×</button></div><div id="detailContent"></div></div></div>
+  <script>
+    const checkTypeSelect = document.getElementById('checkType');
+    if (checkTypeSelect) {
+      checkTypeSelect.innerHTML = '<option value="http">HTTP(s)</option><option value="smtp">SMTP(s)</option><option value="imap">IMAP(s)</option><option value="pop3">POP3(s)</option><option value="mysql">MySQL</option><option value="redis">Redis(s)</option><option value="rabbitmq">RabbitMQ / AMQP(s)</option><option value="postgres">PostgreSQL</option>';
+    }
+  </script>
+  <script src="/ops.js?v=21"></script>
+</body>
+</html>

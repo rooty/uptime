@@ -1,0 +1,132 @@
+name: Deploy SnippetBook
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  GO_VERSION: '1.27.1'
+  DEPLOY_PATH: /opt/snippetbook
+
+jobs:
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup Go
+        uses: actions/setup-go@v6
+        with:
+          go-version: ${{ env.GO_VERSION }}
+          cache: true
+
+      - name: Download dependencies
+        run: go mod download
+
+      - name: Check
+        run: make check
+
+      - name: Validate deployment scripts
+        run: bash -n deploy/*.sh
+
+  build:
+    name: Build linux-amd64
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup Go
+        uses: actions/setup-go@v6
+        with:
+          go-version: ${{ env.GO_VERSION }}
+          cache: true
+
+      - name: Build release
+        run: make release-linux-amd64
+
+      - name: Package release
+        run: tar -czf snippetbook-${GITHUB_SHA}.tgz -C dist/linux-amd64 snippetbook web
+
+      - name: Upload release artifact
+        uses: actions/upload-artifact@v6
+        with:
+          name: snippetbook-release-${{ github.sha }}
+          path: snippetbook-${{ github.sha }}.tgz
+          if-no-files-found: error
+          retention-days: 7
+
+  deploy:
+    name: Deploy linux-amd64
+    needs: build
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+    environment: production
+    steps:
+      - name: Checkout deployment scripts
+        uses: actions/checkout@v6
+
+      - name: Download release artifact
+        uses: actions/download-artifact@v7
+        with:
+          name: snippetbook-release-${{ github.sha }}
+          path: release
+
+      - name: Configure SSH
+        env:
+          DEPLOY_SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+          DEPLOY_KNOWN_HOSTS: ${{ secrets.DEPLOY_KNOWN_HOSTS }}
+          DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+          DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
+          DEPLOY_PORT: ${{ secrets.DEPLOY_PORT }}
+        run: |
+          set -euo pipefail
+          port="${DEPLOY_PORT:-22}"
+          install -d -m 700 "$HOME/.ssh"
+          printf '%s\n' "$DEPLOY_SSH_KEY" > "$HOME/.ssh/id_ed25519"
+          chmod 600 "$HOME/.ssh/id_ed25519"
+          if [[ -n "$DEPLOY_KNOWN_HOSTS" ]]; then
+            printf '%s\n' "$DEPLOY_KNOWN_HOSTS" > "$HOME/.ssh/known_hosts"
+          else
+            ssh-keyscan -p "$port" -H "${{ secrets.DEPLOY_HOST }}" > "$HOME/.ssh/known_hosts"
+          fi
+          chmod 644 "$HOME/.ssh/known_hosts"
+          ssh -p "$port" -i "$HOME/.ssh/id_ed25519" -o IdentitiesOnly=yes \
+            "$DEPLOY_USER@$DEPLOY_HOST" "hostname -f"
+
+      - name: Upload release
+        env:
+          DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+          DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
+          DEPLOY_PORT: ${{ secrets.DEPLOY_PORT }}
+        run: |
+          set -euo pipefail
+          port="${DEPLOY_PORT:-22}"
+          archive="snippetbook-${GITHUB_SHA}.tgz"
+          scp -P "$port" -i "$HOME/.ssh/id_ed25519" -o IdentitiesOnly=yes \
+            "release/$archive" \
+            "$DEPLOY_USER@$DEPLOY_HOST:/tmp/$archive"
+          scp -P "$port" -i "$HOME/.ssh/id_ed25519" -o IdentitiesOnly=yes \
+            deploy/remote-deploy.sh \
+            "$DEPLOY_USER@$DEPLOY_HOST:/tmp/snippetbook-remote-deploy.sh"
+
+      - name: Install release and restart service
+        env:
+          DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+          DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
+          DEPLOY_PORT: ${{ secrets.DEPLOY_PORT }}
+        run: |
+          set -euo pipefail
+          port="${DEPLOY_PORT:-22}"
+          archive="/tmp/snippetbook-${GITHUB_SHA}.tgz"
+          ssh -p "$port" -i "$HOME/.ssh/id_ed25519" -o IdentitiesOnly=yes \
+            "$DEPLOY_USER@$DEPLOY_HOST" \
+            "bash /tmp/snippetbook-remote-deploy.sh '$archive' '$DEPLOY_PATH' && rm -f '$archive' /tmp/snippetbook-remote-deploy.sh"

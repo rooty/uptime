@@ -1,0 +1,8 @@
+*.db
+*.db-journal
+*.sqlite
+*.sqlite3
+.env
+.DS_Store
+bin/
+dist/
