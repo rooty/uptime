@@ -118,8 +118,8 @@ function serviceHistoryBars(service) {
     const status = check?.status || 'empty';
     const title = check ? `${check.status} · ${new Date(check.checked_at).toLocaleString()}` : 'Нет проверки';
     return `<i class="table-history-bar history-${escapeHtml(status)}" title="${escapeHtml(title)}" data-history-tooltip="${escapeHtml(title)}"></i>`;
-  }).join('');
-  return `<div class="table-history-bars">${bars}</div><div class="table-history-scale"><span>${historyPeriodLabel(period)}</span><span>Сейчас</span></div>`;
+  }).reverse().join('');
+  return `<div class="table-history-bars">${bars}</div><div class="table-history-scale"><span>Сейчас</span><span>${historyPeriodLabel(period)}</span></div>`;
 }
 function syncCatalogPeriodButtons() {
   document.querySelectorAll('[data-catalog-period]').forEach(button => {
