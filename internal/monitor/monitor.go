@@ -4,7 +4,9 @@ import (
 	"bufio"
 	"context"
 	"crypto/tls"
+	"crypto/x509"
 	"database/sql"
+	"errors"
 	"fmt"
 	"io"
 	"log"
@@ -230,11 +232,15 @@ func (m *Monitor) RunService(ctx context.Context, service model.Service) error {
 func (m *Monitor) checkService(ctx context.Context, service model.Service, timeout time.Duration, historyLimit int) error {
 	check := Check(ctx, service, timeout, m.client)
 	if IsTLSProtocol(service) {
-		check.TLS = CheckTLS(ctx, service, timeout)
-		if check.TLS.Status == "error" {
+		tlsInfo := CheckTLS(ctx, service, timeout)
+		if tlsInfo.Status == "error" {
+			check.TLS = tlsInfo
 			check.Status = "tls_error"
-			check.Error = check.TLS.Error
-		} else if check.Status == "online" && check.TLS.Status == "expiring" {
+			check.Error = tlsInfo.Error
+		} else if tlsInfo.Status != "unavailable" {
+			check.TLS = tlsInfo
+		}
+		if check.Status == "online" && tlsInfo.Status == "expiring" {
 			check.Status = "degraded"
 		}
 	}
@@ -393,6 +399,9 @@ func CheckTLS(ctx context.Context, service model.Service, timeout time.Duration)
 	defer cancel()
 	conn, err := dialer.DialContext(dialCtx, "tcp", net.JoinHostPort(parsed.Hostname(), port))
 	if err != nil {
+		if !isCertificateError(err) {
+			result.Status = "unavailable"
+		}
 		result.Error = err.Error()
 		return result
 	}
@@ -417,6 +426,17 @@ func CheckTLS(ctx context.Context, service model.Service, timeout time.Duration)
 		result.Status = "ok"
 	}
 	return result
+}
+
+func isCertificateError(err error) bool {
+	var unknownAuthority x509.UnknownAuthorityError
+	var hostnameError x509.HostnameError
+	var certificateInvalid x509.CertificateInvalidError
+	var systemRootsError x509.SystemRootsError
+	return errors.As(err, &unknownAuthority) ||
+		errors.As(err, &hostnameError) ||
+		errors.As(err, &certificateInvalid) ||
+		errors.As(err, &systemRootsError)
 }
 
 func IsTLSProtocol(service model.Service) bool {

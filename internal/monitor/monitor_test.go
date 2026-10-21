@@ -74,6 +74,16 @@ func TestCheckTLSReportsCertificateErrors(t *testing.T) {
 	}
 }
 
+func TestCheckTLSDoesNotClassifyUnavailableServiceAsCertificateError(t *testing.T) {
+	tlsInfo := CheckTLS(context.Background(), model.Service{ID: 11, URL: "smtps://127.0.0.1:1"}, 50*time.Millisecond)
+	if tlsInfo.Status != "unavailable" {
+		t.Fatalf("TLS info = %+v, want unavailable status", tlsInfo)
+	}
+	if tlsInfo.Error == "" {
+		t.Fatal("unavailable TLS check has no error")
+	}
+}
+
 func TestCheckClassifiesHTTPError(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusBadGateway)
