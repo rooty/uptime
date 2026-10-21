@@ -176,12 +176,14 @@ function renderServiceSidebar() {
     return;
   }
   root.innerHTML = services.map(service => {
-    const checks = (serviceHistory[service.id] || []).slice(-30);
+    const checks = [...(serviceHistory[service.id] || [])]
+      .sort((a, b) => new Date(b.checked_at) - new Date(a.checked_at))
+      .slice(0, 24);
     const uptime = serviceUptime(service) || '0';
     const status = currentStatus(service);
     const statusText = status === 'online' ? 'Работает' : status === 'degraded' ? 'Проблемы' : 'Недоступен';
     const bars = Array.from({ length: 24 }, (_, index) => {
-      const check = checks[checks.length - 24 + index];
+      const check = checks[index];
       const barStatus = check ? check.status : 'empty';
       return `<i class="history-bar history-${escapeHtml(barStatus)}" title="${check ? `${escapeHtml(check.status)} · ${new Date(check.checked_at).toLocaleString()}` : 'Нет проверки'}"></i>`;
     }).join('');
