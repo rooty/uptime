@@ -118,8 +118,8 @@ function serviceHistoryBars(service) {
     const status = check?.status || 'empty';
     const title = check ? `${check.status} · ${new Date(check.checked_at).toLocaleString()}` : 'Нет проверки';
     return `<i class="table-history-bar history-${escapeHtml(status)}" title="${escapeHtml(title)}" data-history-tooltip="${escapeHtml(title)}"></i>`;
-  }).reverse().join('');
-  return `<div class="table-history-bars">${bars}</div><div class="table-history-scale"><span>Сейчас</span><span>${historyPeriodLabel(period)}</span></div>`;
+  }).join('');
+  return `<div class="table-history-bars">${bars}</div><div class="table-history-scale"><span>${historyPeriodLabel(period)}</span><span>Сейчас</span></div>`;
 }
 function syncCatalogPeriodButtons() {
   document.querySelectorAll('[data-catalog-period]').forEach(button => {
@@ -177,13 +177,13 @@ function renderServiceSidebar() {
   }
   root.innerHTML = services.map(service => {
     const checks = [...(serviceHistory[service.id] || [])]
-      .sort((a, b) => new Date(b.checked_at) - new Date(a.checked_at))
-      .slice(0, 24);
+      .sort((a, b) => new Date(a.checked_at) - new Date(b.checked_at))
+      .slice(-24);
     const uptime = serviceUptime(service) || '0';
     const status = currentStatus(service);
     const statusText = status === 'online' ? 'Работает' : status === 'degraded' ? 'Проблемы' : 'Недоступен';
     const bars = Array.from({ length: 24 }, (_, index) => {
-      const check = checks[index];
+      const check = checks[index - (24 - checks.length)];
       const barStatus = check ? check.status : 'empty';
       return `<i class="history-bar history-${escapeHtml(barStatus)}" title="${check ? `${escapeHtml(check.status)} · ${new Date(check.checked_at).toLocaleString()}` : 'Нет проверки'}"></i>`;
     }).join('');
