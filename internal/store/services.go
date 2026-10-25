@@ -110,8 +110,18 @@ func (d *DB) UpdateService(service *model.Service) error {
 }
 
 func (d *DB) DeleteService(id int64) error {
-	_, err := d.sql.Exec(`DELETE FROM services WHERE id=?`, id)
-	return err
+	tx, err := d.sql.Begin()
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+	if _, err := tx.Exec(`DELETE FROM service_locations WHERE service_id=?`, id); err != nil {
+		return err
+	}
+	if _, err := tx.Exec(`DELETE FROM services WHERE id=?`, id); err != nil {
+		return err
+	}
+	return tx.Commit()
 }
 
 func (d *DB) AddCheck(check *model.Check) error {

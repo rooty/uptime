@@ -59,6 +59,9 @@ func newUUID() string { return uuid.New().String() }
 
 func (d *DB) migrate() error {
 	stmts := []string{
+		`CREATE TABLE IF NOT EXISTS ip_geolocation (ip TEXT PRIMARY KEY, payload TEXT NOT NULL)`,
+		`CREATE TABLE IF NOT EXISTS service_locations (service_id INTEGER PRIMARY KEY, payload TEXT NOT NULL)`,
+		`CREATE TABLE IF NOT EXISTS geo_state (key TEXT PRIMARY KEY, value TEXT NOT NULL)`,
 		`CREATE TABLE IF NOT EXISTS items (
 			id INTEGER PRIMARY KEY AUTOINCREMENT,
 			uuid TEXT NOT NULL DEFAULT '',

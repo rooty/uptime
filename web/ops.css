@@ -291,3 +291,49 @@ option { background: #15181d; color: #f4f4f5; }
 .modal { background: rgba(3, 5, 8, .82); }
 .modal-card { background: #15181d; border: 1px solid #343a44; }
 .field-hint { color: #858c98; }
+
+/* Geographic view keeps the existing monitoring status palette. */
+.catalog-map-mode .ops-layout { grid-template-columns: 1fr; }
+.catalog-map-mode .service-sidebar, .catalog-map-mode .grid-panels { display: none; }
+.catalog-map-mode .top-actions { flex-wrap: wrap; max-width: 100%; }
+.actions { flex-wrap: wrap; }
+.geo-toolbar { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 12px; }
+.geo-toolbar p { margin: 0; }
+.geo-legend { display: flex; flex-wrap: wrap; gap: 16px; font-size: 12px; color: #b4bac5; margin-bottom: 12px; }
+.geo-legend span { display: inline-flex; align-items: center; gap: 6px; }
+.geo-legend i { width: 9px; height: 9px; border-radius: 50%; }
+.geo-online { background: #35d07f; }
+.geo-warning { background: #f0b84b; }
+.geo-offline { background: #ef5367; }
+.geo-unknown { background: #737b88; }
+.geo-map { height: clamp(340px, 60vh, 720px); border: 1px solid #343a44; border-radius: 9px; isolation: isolate; z-index: 0; background: #dce3e8; }
+.geo-note { color: #9298a3; font-size: 12px; line-height: 1.6; margin: 10px 0; }
+.geo-warning-text, .geo-error { color: #f0b84b; overflow-wrap: anywhere; }
+.geo-error { padding: 12px; border: 1px solid #705729; border-radius: 7px; background: #241e12; }
+.geo-pin { background: transparent; border: 0; }
+.geo-pin span { display: grid; place-items: center; width: 32px; height: 32px; border: 4px solid; border-radius: 50%; background: #15181d; color: #fff; font: 700 13px system-ui, sans-serif; box-shadow: 0 1px 5px #0006; }
+.geo-map .leaflet-popup-content-wrapper, .geo-map .leaflet-popup-tip { background: #15181d; color: #f4f4f5; }
+.geo-map .leaflet-popup-content { max-height: 360px; overflow: auto; margin: 14px; line-height: 1.5; }
+.geo-map .leaflet-popup-content p { margin: 8px 0; }
+.geo-map .leaflet-control a { border: 0; border-radius: 0; padding: 0; }
+.geo-map .leaflet-control-attribution, .geo-map .leaflet-control-attribution a { background: #fff; color: #172033; }
+.geo-map .leaflet-control-zoom a { background: #15181d; color: #f4f4f5; }
+.geo-map .leaflet-popup-close-button { border: 0; padding: 0; background: transparent; }
+.geo-service-info { padding: 12px 0; border-bottom: 1px solid #343a44; overflow-wrap: anywhere; }
+.geo-service-info:last-child { border-bottom: 0; }
+.geo-service-heading { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px; margin-bottom: 8px; }
+.geo-service-info button { margin-top: 8px; }
+.geo-service-info pre { font-size: 12px; white-space: pre-wrap; max-height: 260px; overflow: auto; }
+.geo-service-info summary, .geo-address-list > summary { cursor: pointer; padding: 8px 0; }
+.geo-status { border-left: 3px solid; padding: 2px 8px; font-size: 12px; background: transparent; }
+.geo-status.geo-online { border-color: #35d07f; }
+.geo-status.geo-warning { border-color: #f0b84b; }
+.geo-status.geo-offline { border-color: #ef5367; }
+.geo-status.geo-unknown { border-color: #737b88; }
+.geo-locations h3 { margin: 24px 0 4px; }
+.modal { z-index: 2000; }
+@media (max-width: 700px) {
+  .geo-toolbar { align-items: flex-start; flex-direction: column; }
+  .geo-map { height: 420px; }
+  .geo-legend { gap: 10px; }
+}

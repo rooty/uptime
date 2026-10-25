@@ -216,6 +216,10 @@ function renderMailSidebar() {
 }
 
 function renderServices() {
+  $('serviceList').classList.toggle('hidden', viewMode === 'map');
+  $('serviceMapPanel').classList.toggle('hidden', viewMode !== 'map');
+  if (viewMode === 'map') { OpsMap.show(); return; }
+  OpsMap.hide();
   if (viewMode === 'table') return renderServiceTable();
   const root = $('serviceList');
   if (!services.length) { root.innerHTML = '<div class="empty">Сервисов по выбранным фильтрам нет.</div>'; return; }
@@ -237,8 +241,12 @@ function renderServices() {
 }
 function applyViewMode() {
   document.body.classList.toggle('catalog-table-mode', viewMode === 'table');
+  document.body.classList.toggle('catalog-map-mode', viewMode === 'map');
   $('cardView').classList.toggle('primary', viewMode === 'cards');
   $('tableView').classList.toggle('primary', viewMode === 'table');
+  $('mapView').classList.toggle('primary', viewMode === 'map');
+  $('catalogPeriods').classList.toggle('hidden', viewMode === 'map');
+  ['cards', 'table', 'map'].forEach(mode => $(mode === 'cards' ? 'cardView' : mode === 'table' ? 'tableView' : 'mapView').setAttribute('aria-pressed', String(viewMode === mode)));
 }
 function serviceActionButtons(service) {
   return `<div class="service-actions" aria-label="Действия с сервисом"><button class="icon-button" data-detail="${service.id}" title="Подробнее" aria-label="Подробнее"><span aria-hidden="true">${actionIcon('details')}</span></button><button class="icon-button" data-check="${service.id}" title="Проверить сейчас" aria-label="Проверить сейчас"><span aria-hidden="true">${actionIcon('check')}</span></button><button class="icon-button" data-edit="${service.id}" title="Изменить" aria-label="Изменить"><span aria-hidden="true">${actionIcon('edit')}</span></button><button class="icon-button danger" data-delete="${service.id}" title="Удалить" aria-label="Удалить"><span aria-hidden="true">${actionIcon('delete')}</span></button></div>`;
@@ -538,6 +546,7 @@ async function showNotifications() { const data = await api('/notifications'); i
 ['newService', 'newServiceTable'].forEach(id => { if ($(id)) $(id).onclick = openNew; }); $('closeModal').onclick = closeModal; $('cancel').onclick = closeModal; $('checkAll').onclick = checkAll; $('applyFilters').onclick = load; $('notificationsButton').onclick = showNotifications; $('closeDetail').onclick = () => $('detailModal').classList.add('hidden');
 $('cardView').onclick = () => { viewMode = 'cards'; localStorage.setItem('uptime-view-mode-v2', viewMode); applyViewMode(); renderServices(); };
 $('tableView').onclick = () => { viewMode = 'table'; localStorage.setItem('uptime-view-mode-v2', viewMode); applyViewMode(); renderServices(); };
+$('mapView').onclick = () => { viewMode = 'map'; localStorage.setItem('uptime-view-mode-v2', viewMode); applyViewMode(); renderServices(); };
 $('serviceSearch').onkeydown = event => { if (event.key === 'Enter') load(); };
 applyViewMode();
  $('serviceForm').onsubmit = async event => { event.preventDefault(); const payload = { name: $('name').value.trim(), url: $('url').value.trim(), check_type: canonicalCheckType($('checkType').value), environment: $('environment').value, check_interval: $('serviceCheckInterval').value.trim(), repeat_notifications_enabled: $('repeatNotificationsEnabled').checked, repeat_notification_interval: $('repeatNotificationInterval').value.trim(), description: $('description').value.trim(), tags: $('tags').value.split(',').map(value => value.trim()).filter(Boolean), enabled: $('enabled').checked }; try { await api(editingId ? `/services/${editingId}` : '/services', { method: editingId ? 'PUT' : 'POST', body: JSON.stringify(payload) }); closeModal(); await load(); } catch (error) { alert('Ошибка сохранения: ' + error.message); } };

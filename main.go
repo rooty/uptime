@@ -11,6 +11,7 @@ import (
 
 	"snippetbook/internal/config"
 	"snippetbook/internal/crypto"
+	"snippetbook/internal/geo"
 	"snippetbook/internal/handler"
 	"snippetbook/internal/monitor"
 	"snippetbook/internal/store"
@@ -34,6 +35,15 @@ func main() {
 	defer stop()
 	watcher := monitor.New(st)
 	go watcher.Run(ctx)
+	geoDone := make(chan struct{})
+	go func() {
+		defer close(geoDone)
+		geo.New(st).Run(ctx)
+	}()
+	defer func() {
+		stop()
+		<-geoDone
+	}()
 
 	addr := ":" + cfg.Port
 	log.Printf("snippetbook listening on %s (db=%s)", addr, cfg.DBPath)

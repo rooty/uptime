@@ -4,7 +4,8 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Local Ops Board</title>
-  <link rel="stylesheet" href="/ops.css?v=39" />
+  <link rel="stylesheet" href="/vendor/leaflet/leaflet.css" />
+  <link rel="stylesheet" href="/ops.css?v=40" />
 </head>
 <body>
   <header class="topbar"><div><strong>Local Ops Board</strong><span class="muted"> локальный контроль сервисов</span></div><div class="top-actions"><a href="/uptime/domain">Domains</a><a href="/uptime/settings">Настройки</a><button id="notificationsButton">Уведомления</button><a href="/">SnippetBook</a></div></header>
@@ -13,11 +14,19 @@
       <aside class="service-sidebar panel"><div class="sidebar-head"><div><h2>Сервисы</h2><p class="muted">Состояние и история</p></div><button id="newService" class="primary" title="Добавить сервис">+</button></div><div id="serviceSidebarList" class="service-sidebar-list"></div><div class="mail-sidebar-section"><div class="sidebar-head"><div><h2>Domains</h2><p class="muted">Постоянные проверки</p></div><a class="sidebar-add" href="/uptime/domain" title="Добавить проверку домена">+</a></div><div id="mailSidebarList" class="service-sidebar-list"></div></div></aside>
       <div class="ops-content">
     <section class="summary"><div class="metric"><span>Всего</span><strong id="total">0</strong></div><div class="metric online"><span>Работают</span><strong id="online">0</strong></div><div class="metric degraded"><span>Проблемы</span><strong id="degraded">0</strong></div><div class="metric offline"><span>Недоступны</span><strong id="offline">0</strong></div></section>
-    <section class="panel service-catalog-panel"><div class="panel-head"><div><h1>Сервисы</h1><p class="muted">Проверяйте важные endpoints в одном месте.</p></div><div class="actions"><button id="checkAll">Проверить всё</button><button id="newServiceTable" class="primary" type="button">Добавить сервис</button><button id="cardView" type="button">Карточки</button><button id="tableView" type="button">Таблица</button></div></div>
+    <section class="panel service-catalog-panel"><div class="panel-head"><div><h1>Сервисы</h1><p class="muted">Проверяйте важные endpoints в одном месте.</p></div><div class="actions"><button id="checkAll">Проверить всё</button><button id="newServiceTable" class="primary" type="button">Добавить сервис</button><button id="cardView" type="button">Карточки</button><button id="tableView" type="button">Таблица</button><button id="mapView" type="button">Карта</button></div></div>
       <div class="service-search"><input id="serviceSearch" placeholder="Поиск по названию, URL, описанию или тегу" /><button id="applyFilters">Применить</button></div>
       <div class="filters"><select id="environmentFilter"><option value="">Все окружения</option><option>production</option><option>staging</option><option>development</option></select><select id="typeFilter"><option value="">Все типы</option><option value="http">HTTP(s)</option><option value="smtp">SMTP(s)</option><option value="imap">IMAP(s)</option><option value="pop3">POP3(s)</option><option value="mysql">MySQL</option><option value="redis">Redis(s)</option><option value="rabbitmq">RabbitMQ / AMQP(s)</option><option value="postgres">PostgreSQL</option></select><input id="tagFilter" placeholder="Фильтр по тегу" /><select id="statusFilter"><option value="">Все статусы</option><option value="online">Работает</option><option value="degraded">Проблемы</option><option value="offline">Недоступен</option><option value="tls_error">TLS error</option></select><select id="sortFilter"><option value="name">По имени</option><option value="status">По статусу</option><option value="response_time">По response time</option><option value="last_check">По последней проверке</option></select></div>
       <div id="catalogPeriods" class="catalog-periods" aria-label="Период графиков"><button data-catalog-period="6h">6h</button><button data-catalog-period="24h" class="active">24h</button><button data-catalog-period="7d">7d</button><button data-catalog-period="30d">30d</button></div>
       <div id="serviceList" class="service-list"></div>
+      <section id="serviceMapPanel" class="hidden" aria-label="Карта мониторинга">
+        <div class="geo-toolbar"><p id="geoSummary" role="status">Загрузка расположений…</p><button id="geoFit" type="button">Показать все точки</button></div>
+        <div class="geo-legend"><span><i class="geo-online"></i>Работает</span><span><i class="geo-warning"></i>Проблемы / TLS</span><span><i class="geo-offline"></i>Недоступен</span><span><i class="geo-unknown"></i>Нет проверки / выключен</span></div>
+        <p id="geoError" class="geo-error hidden" role="status"></p>
+        <div id="serviceMap" class="geo-map" aria-label="Расположение IP-адресов сервисов"></div>
+        <p class="geo-note">Геолокация IP приблизительная. CDN и прокси могут скрывать расположение сервера. Статус относится к сервису, не к отдельному IP. Данные ip-api.com обновляются раз в сутки.</p>
+        <div id="geoLocations" class="geo-locations"></div>
+      </section>
     </section>
     <section class="grid-panels"><section class="panel"><h2>Последние ошибки</h2><div id="recentErrors" class="compact-list"></div></section><section class="panel"><h2>Response time</h2><div id="responseTimes" class="chart"></div></section></section>
       </div>
@@ -31,6 +40,8 @@
       checkTypeSelect.innerHTML = '<option value="http">HTTP(s)</option><option value="smtp">SMTP(s)</option><option value="imap">IMAP(s)</option><option value="pop3">POP3(s)</option><option value="mysql">MySQL</option><option value="redis">Redis(s)</option><option value="rabbitmq">RabbitMQ / AMQP(s)</option><option value="postgres">PostgreSQL</option>';
     }
   </script>
-  <script src="/ops.js?v=50"></script>
+  <script src="/vendor/leaflet/leaflet.js"></script>
+  <script src="/ops-map.js?v=1"></script>
+  <script src="/ops.js?v=51"></script>
 </body>
 </html>

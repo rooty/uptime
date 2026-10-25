@@ -39,10 +39,18 @@ type serviceRequest struct {
 }
 
 func (h *ServicesHandler) List(c *gin.Context) {
-	services, err := h.Store.ListServices()
+	services, err := h.filteredServices(c)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
+	}
+	c.JSON(http.StatusOK, gin.H{"services": services})
+}
+
+func (h *ServicesHandler) filteredServices(c *gin.Context) ([]model.Service, error) {
+	services, err := h.Store.ListServices()
+	if err != nil {
+		return nil, err
 	}
 	environment := strings.TrimSpace(c.Query("environment"))
 	tag := strings.ToLower(strings.TrimSpace(c.Query("tag")))
@@ -84,7 +92,7 @@ func (h *ServicesHandler) List(c *gin.Context) {
 	case "last_check":
 		sort.SliceStable(filtered, func(i, j int) bool { return lastCheckTime(filtered[i]).After(lastCheckTime(filtered[j])) })
 	}
-	c.JSON(http.StatusOK, gin.H{"services": filtered})
+	return filtered, nil
 }
 
 func serviceMatchesSearch(service model.Service, search string) bool {
