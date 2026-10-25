@@ -3,12 +3,15 @@ package notify
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
+	"io"
 	"net/http"
 	"net/smtp"
 	"net/url"
 	"strconv"
 	"strings"
+	"time"
 
 	"snippetbook/internal/httpua"
 	"snippetbook/internal/model"
@@ -49,6 +52,14 @@ func DispatchSettings(ctx context.Context, settings model.NotificationSettings, 
 }
 
 func sendTelegram(ctx context.Context, settings model.NotificationSettings, item model.Notification) error {
+	client := &http.Client{
+		Timeout:       10 * time.Second,
+		CheckRedirect: func(*http.Request, []*http.Request) error { return http.ErrUseLastResponse },
+	}
+	return sendTelegramWithClient(ctx, client, settings, item)
+}
+
+func sendTelegramWithClient(ctx context.Context, client *http.Client, settings model.NotificationSettings, item model.Notification) error {
 	if settings.TelegramBotToken == "" || settings.TelegramChatID == "" {
 		return fmt.Errorf("bot token and chat id are required")
 	}
@@ -61,12 +72,60 @@ func sendTelegram(ctx context.Context, settings model.NotificationSettings, item
 		return fmt.Errorf("encode Telegram message: %w", err)
 	}
 	endpoint := "https://api.telegram.org/bot" + url.PathEscape(settings.TelegramBotToken) + "/sendMessage"
-	return postJSON(ctx, endpoint, payload, nil)
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, endpoint, strings.NewReader(string(payload)))
+	if err != nil {
+		return fmt.Errorf("create Telegram request: %s", redactTelegramError(err.Error(), settings.TelegramBotToken))
+	}
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("User-Agent", httpua.UserAgent)
+	response, err := client.Do(req)
+	if err != nil {
+		// net/http includes the full bot-token URL in url.Error.Error().
+		var requestError *url.Error
+		if errors.As(err, &requestError) {
+			err = requestError.Err
+		}
+		return fmt.Errorf("Telegram HTTP request: %s", redactTelegramError(err.Error(), settings.TelegramBotToken))
+	}
+	defer response.Body.Close()
+	var result struct {
+		OK          bool   `json:"ok"`
+		ErrorCode   int    `json:"error_code"`
+		Description string `json:"description"`
+		Parameters  struct {
+			RetryAfter int `json:"retry_after"`
+		} `json:"parameters"`
+	}
+	decodeErr := json.NewDecoder(io.LimitReader(response.Body, 64*1024)).Decode(&result)
+	if response.StatusCode < 200 || response.StatusCode >= 300 || (decodeErr == nil && !result.OK) {
+		message := fmt.Sprintf("Telegram HTTP %d, API error %d", response.StatusCode, result.ErrorCode)
+		if result.Description != "" {
+			message += ": " + redactTelegramError(result.Description, settings.TelegramBotToken)
+		}
+		if result.Parameters.RetryAfter > 0 {
+			message += fmt.Sprintf(" (retry_after=%ds)", result.Parameters.RetryAfter)
+		}
+		return errors.New(message)
+	}
+	if decodeErr != nil {
+		return fmt.Errorf("decode Telegram response: %s", redactTelegramError(decodeErr.Error(), settings.TelegramBotToken))
+	}
+	return nil
+}
+
+func redactTelegramError(message, token string) string {
+	if token != "" {
+		message = strings.ReplaceAll(message, url.PathEscape(token), "[REDACTED]")
+		message = strings.ReplaceAll(message, token, "[REDACTED]")
+	}
+	return message
 }
 
 func telegramMessage(item model.Notification) string {
 	header := "ℹ️ УВЕДОМЛЕНИЕ"
 	switch item.Kind {
+	case "application_started":
+		header = "🚀 СЕРВИС ЗАПУЩЕН"
 	case "incident_started":
 		header = "🚨 ПРОБЛЕМА НАЧАЛАСЬ"
 	case "incident_resolved":

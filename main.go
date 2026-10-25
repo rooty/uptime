@@ -7,14 +7,15 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
-	"time"
 
 	"snippetbook/internal/config"
 	"snippetbook/internal/crypto"
 	"snippetbook/internal/geo"
 	"snippetbook/internal/handler"
 	"snippetbook/internal/monitor"
+	"snippetbook/internal/notify"
 	"snippetbook/internal/store"
+	"snippetbook/internal/version"
 )
 
 func main() {
@@ -46,17 +47,16 @@ func main() {
 	}()
 
 	addr := ":" + cfg.Port
-	log.Printf("snippetbook listening on %s (db=%s)", addr, cfg.DBPath)
 	server := &http.Server{Addr: addr, Handler: r}
-	go func() {
-		<-ctx.Done()
-		shutdownCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-		defer cancel()
-		if err := server.Shutdown(shutdownCtx); err != nil {
-			log.Printf("server shutdown: %v", err)
+	if err := serve(ctx, server, func(readyCtx context.Context, address string) {
+		log.Printf("snippetbook listening on %s (db=%s)", address, cfg.DBPath)
+		if err := notify.Startup(readyCtx, st, notify.StartupInfo{
+			Version: version.Version, Commit: version.Commit, BuildTime: version.BuildTime,
+			StartedAt: version.StartedAt, Address: address,
+		}); err != nil && readyCtx.Err() == nil {
+			log.Printf("startup notification: %v", err)
 		}
-	}()
-	if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+	}); err != nil && err != http.ErrServerClosed {
 		log.Fatalf("server: %v", err)
 	}
 }
