@@ -12,16 +12,21 @@ func TestServiceMetricsAggregateChecks(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer db.Close()
+	defer func() {
+		if err := db.Close(); err != nil {
+			t.Error(err)
+		}
+	}()
 
 	service := model.Service{Name: "API", URL: "https://example.test", Enabled: true}
 	if err := db.CreateService(&service); err != nil {
 		t.Fatal(err)
 	}
-	now := time.Now().UTC().Truncate(time.Second)
+	// Keep both checks in a completed hour, regardless of the current minute.
+	hour := time.Now().UTC().Truncate(time.Hour).Add(-time.Hour)
 	checks := []model.Check{
-		{ServiceID: service.ID, Status: "online", ResponseTimeMS: 100, CheckedAt: now.Add(-10 * time.Minute), Metrics: &model.CheckMetrics{DNSMS: 4, ConnectMS: 8, TLSMS: 12, TTFBMS: 30, PageSizeBytes: 1000}},
-		{ServiceID: service.ID, Status: "offline", ResponseTimeMS: 300, CheckedAt: now.Add(-5 * time.Minute), Metrics: &model.CheckMetrics{DNSMS: 5, ConnectMS: 9, TLSMS: 13, TTFBMS: 40, PageSizeBytes: 1200}},
+		{ServiceID: service.ID, Status: "online", ResponseTimeMS: 100, CheckedAt: hour.Add(10 * time.Minute), Metrics: &model.CheckMetrics{DNSMS: 4, ConnectMS: 8, TLSMS: 12, TTFBMS: 30, PageSizeBytes: 1000}},
+		{ServiceID: service.ID, Status: "offline", ResponseTimeMS: 300, CheckedAt: hour.Add(15 * time.Minute), Metrics: &model.CheckMetrics{DNSMS: 5, ConnectMS: 9, TLSMS: 13, TTFBMS: 40, PageSizeBytes: 1200}},
 	}
 	for index := range checks {
 		if err := db.AddCheck(&checks[index]); err != nil {
