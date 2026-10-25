@@ -34,21 +34,26 @@ const OpsMap = (() => {
     button.onclick = () => openDetail(service.id).catch(error => window.alert(error.message));
     return button;
   }
-  function serviceInfo(service, address) {
+  function serviceInfo(service, addresses = []) {
     const card = node('article', undefined, 'geo-service-info');
     const heading = node('div', undefined, 'geo-service-heading');
     const badge = node('span', label(service), `geo-status geo-${tone(service)}`);
     heading.append(node('strong', service.name), badge);
-    card.append(heading, node('div', `${service.hostname}${address ? ` · ${address.ip}` : ''}`));
-    if (address?.location?.last_success_at) {
-      const location = address.location;
-      card.append(node('p', [location.country, location.regionName, location.city].filter(Boolean).join(', ')));
-      card.append(node('div', [location.isp, location.org, location.as, location.timezone].filter(Boolean).join(' · '), 'geo-note'));
-      card.append(node('div', `Геоданные: ${date(location.last_success_at)}${address.stale ? ' · Данные устарели' : ''}`, address.stale ? 'geo-warning-text' : 'geo-note'));
-    }
+    card.append(heading, node('div', service.hostname));
     if (service.error) card.append(node('p', service.error, 'geo-warning-text'));
-    if (address?.error) card.append(node('p', `${address.ip}: ${address.error}`, 'geo-warning-text'));
-    if (address?.location?.error) card.append(node('div', `Последняя попытка: ${date(address.location.last_attempt_at)}; повтор: ${date(address.location.next_attempt_at)}`, 'geo-note'));
+    for (const address of addresses) {
+      const block = node('section', undefined, 'geo-address-info');
+      block.append(node('strong', `IP: ${address.ip}`));
+      if (address.location?.last_success_at) {
+        const location = address.location;
+        block.append(node('p', [location.country, location.regionName, location.city].filter(Boolean).join(', ')));
+        block.append(node('div', [location.isp, location.org, location.as, location.timezone].filter(Boolean).join(' · '), 'geo-note'));
+        block.append(node('div', `Геоданные: ${date(location.last_success_at)}${address.stale ? ' · Данные устарели' : ''}`, address.stale ? 'geo-warning-text' : 'geo-note'));
+      }
+      if (address.error) block.append(node('p', `${address.ip}: ${address.error}`, 'geo-warning-text'));
+      if (address.location?.error) block.append(node('div', `Последняя попытка: ${date(address.location.last_attempt_at)}; повтор: ${date(address.location.next_attempt_at)}`, 'geo-note'));
+      card.append(block);
+    }
     if (service.last_check) {
       const check = service.last_check;
       card.append(node('div', `Проверка: ${date(check.checked_at)} · ${check.response_time_ms} мс`, 'geo-note'));
@@ -61,6 +66,11 @@ const OpsMap = (() => {
     }
     card.append(detailButton(service));
     return card;
+  }
+  function addServiceAddress(collection, service, address) {
+    if (!collection.has(service.id)) collection.set(service.id, { service, addresses: [] });
+    const entry = collection.get(service.id);
+    if (address && !entry.addresses.some(item => item.ip === address.ip)) entry.addresses.push(address);
   }
   function fit() {
     if (map && bounds.length) map.fitBounds(bounds, { padding: [35, 35], maxZoom: 8, animate: false });
@@ -90,49 +100,49 @@ const OpsMap = (() => {
     markers?.clearLayers();
     bounds = [];
     const groups = new Map();
-    const missing = [];
-    const placed = [];
-    let placedCount = 0;
+    const missing = new Map();
+    const placed = new Map();
     for (const service of items) {
-      let hasLocation = false;
       for (const address of service.addresses) {
         const location = address.location;
         if (!location?.last_success_at || !Number.isFinite(location.lat) || !Number.isFinite(location.lon)) {
-          missing.push({ service, address });
+          addServiceAddress(missing, service, address);
           continue;
         }
-        hasLocation = true;
         const key = `${location.lat},${location.lon}`;
-        if (!groups.has(key)) groups.set(key, { coords: [location.lat, location.lon], entries: [] });
-        groups.get(key).entries.push({ service, address });
-        placed.push({ service, address });
+        if (!groups.has(key)) groups.set(key, { coords: [location.lat, location.lon], services: new Map() });
+        addServiceAddress(groups.get(key).services, service, address);
+        addServiceAddress(placed, service, address);
       }
-      if (hasLocation) placedCount++;
-      if (!service.addresses.length) missing.push({ service });
+      if (!service.addresses.length) addServiceAddress(missing, service);
     }
     for (const group of groups.values()) {
       bounds.push(group.coords);
       if (!map) continue;
       const popup = node('div', undefined, 'geo-popup');
-      group.entries.forEach(({ service, address }) => popup.append(serviceInfo(service, address)));
-      const tones = group.entries.map(entry => tone(entry.service));
+      const entries = [...group.services.values()];
+      const monitoringItems = entries.reduce((count, entry) => count + entry.addresses.length, 0);
+      popup.append(node('p', `Элементов мониторинга (IP → сервис): ${monitoringItems}`, 'geo-note'));
+      entries.forEach(({ service, addresses }) => popup.append(serviceInfo(service, addresses)));
+      const tones = entries.map(entry => tone(entry.service));
       const worst = ['offline', 'warning', 'online', 'unknown'].find(value => tones.includes(value));
-      const names = group.entries.map(entry => entry.service.name).join(', ');
+      const names = entries.map(entry => entry.service.name).join(', ');
+      const title = `Элементов мониторинга (IP → сервис): ${monitoringItems}. ${names}`;
       L.marker(group.coords, {
-        title: names, alt: names, keyboard: true,
-        icon: L.divIcon({ className: 'geo-pin', html: `<span style="border-color:${colors[worst]}">${group.entries.length > 1 ? group.entries.length : '●'}</span>`, iconSize: [32, 32], iconAnchor: [16, 16] })
+        title, alt: title, keyboard: true,
+        icon: L.divIcon({ className: 'geo-pin', html: `<span style="border-color:${colors[worst]}">${monitoringItems}</span>`, iconSize: [32, 32], iconAnchor: [16, 16] })
       }).bindPopup(popup, { maxWidth: 380 }).addTo(markers);
     }
-    element('geoSummary').textContent = items.length ? `На карте ${placedCount} из ${items.length} сервисов · ${groups.size} мест расположения` : 'Сервисов по выбранным фильтрам нет.';
+    element('geoSummary').textContent = items.length ? `На карте ${placed.size} из ${items.length} сервисов · ${groups.size} мест расположения` : 'Сервисов по выбранным фильтрам нет.';
     element('geoFit').disabled = !map || !bounds.length;
-    if (missing.length) {
-      root.append(node('h3', `Без геолокации (${missing.length})`));
-      missing.forEach(({ service, address }) => root.append(serviceInfo(service, address)));
+    if (missing.size) {
+      root.append(node('h3', `Без геолокации (${missing.size})`));
+      missing.forEach(({ service, addresses }) => root.append(serviceInfo(service, addresses)));
     }
-    if (placed.length) {
+    if (placed.size) {
       const details = node('details', undefined, 'geo-address-list');
-      details.append(node('summary', `Расположения и диагностика (${placed.length})`));
-      placed.forEach(({ service, address }) => details.append(serviceInfo(service, address)));
+      details.append(node('summary', `Расположения и диагностика (${placed.size})`));
+      placed.forEach(({ service, addresses }) => details.append(serviceInfo(service, addresses)));
       root.append(details);
     }
     // Fit only when filters/addresses change, never on periodic status refresh.

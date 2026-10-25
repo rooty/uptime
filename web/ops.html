@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Local Ops Board</title>
   <link rel="stylesheet" href="/vendor/leaflet/leaflet.css" />
-  <link rel="stylesheet" href="/ops.css?v=41" />
+  <link rel="stylesheet" href="/ops.css?v=42" />
 </head>
 <body>
   <header class="topbar"><div><strong>Local Ops Board</strong><span class="muted"> локальный контроль сервисов</span></div><div class="top-actions"><a href="/uptime/domain">Domains</a><a href="/uptime/settings">Настройки</a><button id="notificationsButton">Уведомления</button><a href="/">SnippetBook</a></div></header>
@@ -27,8 +27,8 @@
           <details id="geoMapKey" class="geo-map-key" open>
             <summary>Обозначения на карте</summary>
             <div class="geo-key-content">
-              <div class="geo-key-row"><span class="geo-symbol geo-online" aria-hidden="true">●</span><span>Одна запись: сервис и его IP</span></div>
-              <div class="geo-key-row"><span class="geo-symbol geo-online" aria-hidden="true">8</span><span>Число — количество записей в одном месте</span></div>
+              <div class="geo-key-row"><span class="geo-symbol geo-online" aria-hidden="true">1</span><span>Один элемент мониторинга: IP → сервис</span></div>
+              <div class="geo-key-row"><span class="geo-symbol geo-online" aria-hidden="true">8</span><span>Число — количество пар IP → сервис в этой точке</span></div>
               <p class="geo-key-caption">Цвет обводки — статус:</p>
               <div class="geo-key-statuses">
                 <span><i class="geo-key-ring geo-online" aria-hidden="true"></i>Работает</span>
@@ -36,7 +36,7 @@
                 <span><i class="geo-key-ring geo-offline" aria-hidden="true"></i>Недоступен</span>
                 <span><i class="geo-key-ring geo-unknown" aria-hidden="true"></i>Нет проверки / выключен</span>
               </div>
-              <p class="geo-key-caption">Цвет группы показывает наиболее серьёзный статус. Несколько IP одного сервиса считаются отдельно.</p>
+              <p class="geo-key-caption">Разные IP одного сервиса — отдельные элементы. Повтор одной пары не увеличивает число. Цвет группы показывает наиболее серьёзный статус.</p>
               <p class="geo-key-hint">Нажмите на кружок, чтобы увидеть сервисы и IP.</p>
             </div>
           </details>
@@ -58,7 +58,7 @@
     }
   </script>
   <script src="/vendor/leaflet/leaflet.js"></script>
-  <script src="/ops-map.js?v=1"></script>
+  <script src="/ops-map.js?v=2"></script>
   <script src="/ops.js?v=51"></script>
 </body>
 </html>

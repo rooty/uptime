@@ -334,6 +334,8 @@ option { background: #15181d; color: #f4f4f5; }
 .geo-map .leaflet-popup-close-button { border: 0; padding: 0; background: transparent; }
 .geo-service-info { padding: 12px 0; border-bottom: 1px solid #343a44; overflow-wrap: anywhere; }
 .geo-service-info:last-child { border-bottom: 0; }
+.geo-address-info { padding: 10px 0; border-bottom: 1px solid #343a44; }
+.geo-address-info:last-of-type { border-bottom: 0; }
 .geo-service-heading { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px; margin-bottom: 8px; }
 .geo-service-info button { margin-top: 8px; }
 .geo-service-info pre { font-size: 12px; white-space: pre-wrap; max-height: 260px; overflow: auto; }

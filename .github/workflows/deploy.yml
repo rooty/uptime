@@ -33,6 +33,12 @@ jobs:
       - name: Check
         run: make check
 
+      - name: Test map item grouping
+        run: |
+          node --check web/ops.js
+          node --check web/ops-map.js
+          node --test web/ops-map.test.cjs
+
       - name: Validate deployment scripts
         run: bash -n deploy/*.sh
 
