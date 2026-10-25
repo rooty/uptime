@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Local Ops Board</title>
   <link rel="stylesheet" href="/vendor/leaflet/leaflet.css" />
-  <link rel="stylesheet" href="/ops.css?v=40" />
+  <link rel="stylesheet" href="/ops.css?v=41" />
 </head>
 <body>
   <header class="topbar"><div><strong>Local Ops Board</strong><span class="muted"> локальный контроль сервисов</span></div><div class="top-actions"><a href="/uptime/domain">Domains</a><a href="/uptime/settings">Настройки</a><button id="notificationsButton">Уведомления</button><a href="/">SnippetBook</a></div></header>
@@ -21,9 +21,26 @@
       <div id="serviceList" class="service-list"></div>
       <section id="serviceMapPanel" class="hidden" aria-label="Карта мониторинга">
         <div class="geo-toolbar"><p id="geoSummary" role="status">Загрузка расположений…</p><button id="geoFit" type="button">Показать все точки</button></div>
-        <div class="geo-legend"><span><i class="geo-online"></i>Работает</span><span><i class="geo-warning"></i>Проблемы / TLS</span><span><i class="geo-offline"></i>Недоступен</span><span><i class="geo-unknown"></i>Нет проверки / выключен</span></div>
         <p id="geoError" class="geo-error hidden" role="status"></p>
-        <div id="serviceMap" class="geo-map" aria-label="Расположение IP-адресов сервисов"></div>
+        <div class="geo-map-frame">
+          <div id="serviceMap" class="geo-map" aria-label="Расположение IP-адресов сервисов" aria-describedby="geoMapKey"></div>
+          <details id="geoMapKey" class="geo-map-key" open>
+            <summary>Обозначения на карте</summary>
+            <div class="geo-key-content">
+              <div class="geo-key-row"><span class="geo-symbol geo-online" aria-hidden="true">●</span><span>Одна запись: сервис и его IP</span></div>
+              <div class="geo-key-row"><span class="geo-symbol geo-online" aria-hidden="true">8</span><span>Число — количество записей в одном месте</span></div>
+              <p class="geo-key-caption">Цвет обводки — статус:</p>
+              <div class="geo-key-statuses">
+                <span><i class="geo-key-ring geo-online" aria-hidden="true"></i>Работает</span>
+                <span><i class="geo-key-ring geo-warning" aria-hidden="true"></i>Проблемы / TLS</span>
+                <span><i class="geo-key-ring geo-offline" aria-hidden="true"></i>Недоступен</span>
+                <span><i class="geo-key-ring geo-unknown" aria-hidden="true"></i>Нет проверки / выключен</span>
+              </div>
+              <p class="geo-key-caption">Цвет группы показывает наиболее серьёзный статус. Несколько IP одного сервиса считаются отдельно.</p>
+              <p class="geo-key-hint">Нажмите на кружок, чтобы увидеть сервисы и IP.</p>
+            </div>
+          </details>
+        </div>
         <p class="geo-note">Геолокация IP приблизительная. CDN и прокси могут скрывать расположение сервера. Статус относится к сервису, не к отдельному IP. Данные ip-api.com обновляются раз в сутки.</p>
         <div id="geoLocations" class="geo-locations"></div>
       </section>
